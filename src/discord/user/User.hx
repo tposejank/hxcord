@@ -36,9 +36,9 @@ class BaseUser extends Snowflake {
     public var global_name:String;
     public var bot:Bool;
     public var system:Bool;
-    private var _avatar:String = null;
-    private var _banner:String = null;
-    private var _accent_colour:Int = null;
+    private var _avatar:String;
+    private var _banner:String;
+    private var _accent_colour:Int;
     private var _public_flags:Int;
 
     private var _state:ConnectionState;

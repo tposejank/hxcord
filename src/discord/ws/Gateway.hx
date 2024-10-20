@@ -43,7 +43,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The sequence number of the events sent & received via the gateway.
      */
-    private var _lastSequenceNum:Int = null;
+    private var _lastSequenceNum:Int;
 
     private var _sessionID:String = null;
 

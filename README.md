@@ -55,11 +55,10 @@ class Main {
 ## Requirements
 - Haxe 4
 
-## Supported platforms
+## Supported platforms (not written by gpt)
 - Neko
-- Node JS
-- C++
-- C#
+- HashLink
+- C++ (`haxelib install hxcpp`)
 
 ## Documentation
 Comprehensive documentation and additional examples can be found in the wiki.

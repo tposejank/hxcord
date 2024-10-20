@@ -2,7 +2,6 @@ package discord.utils.log;
 
 //call Log.init somewhere
 
-import sys.ssl.Key;
 import haxe.Constraints.Function;
 import haxe.PosInfos;
 

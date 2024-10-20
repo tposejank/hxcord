@@ -1,7 +1,0 @@
---neko script.n 
---main Main
---class-path src
-
-# -D WSDEBUG
-# ^^ Turn this on if you want
-# Haxe's Websocket logs 
