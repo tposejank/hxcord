@@ -1,0 +1,13 @@
+{
+    "name": "discord.hx",
+    "url" : "https://github.com/tposejank/discord.hx",
+    "license": "MIT",
+    "tags": ["discord", "discordbot", "bot", "wrapper", "discordpy"],
+    "description": "A Discord wrapper similar to discord.py written in Haxe.",
+    "version": "0.0.1",
+    "classPath": "src/",
+    "releasenote": "Initial release.",
+    "contributors": ["tposejank"],
+    "dependencies": {
+    }
+}

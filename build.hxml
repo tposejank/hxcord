@@ -1,0 +1,4 @@
+--library hxdiscord
+-cp src
+--main Main
+--interp
