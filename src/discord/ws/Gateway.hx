@@ -84,6 +84,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
     public var intents:Intents;
 
+    private var _weSentZeroToDiscord:Bool = false;
+
     /**
      * Initialize the Gateway
      * @param token The application token
@@ -131,7 +133,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         // Listeners for start options
         ws.onopen = () ->
         {
-            trace('Opened');
+            // trace('Opened');
             initialized = true;
         }
 
@@ -153,19 +155,22 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
         ws.onerror = (msg:String) ->
         {
-            trace('[WS ERR] ${msg}');
+            Log.error('[WS ERR] ${msg}');
         }
 
-        ws.onclose = () ->
+        ws.onclose = (code:Int, message:String) ->
         {
             if (hb_timer != null) hb_timer.stop();
             initialized = false;
-            trace('[WS CLS] Websocket was closed. Reconnect in progress');
+            Log.error('[WS CLS] Websocket closed with code $code');
+            Log.error('[CL MSG] $message');
 
             // Force close the client just in case
-            ws.close();
+            if (ws.state != Closed) {
+                ws.close();
+            }
 
-            tryReconnection();
+            handleDisconnectCode(code, message);
         }
 
         #if sys
@@ -174,6 +179,58 @@ class Gateway extends discord.utils.events.EventDispatcher {
             ticked = true;
         }
         #end
+    }
+
+    public function handleDisconnectCode(code:Int, message:String) {
+        var shouldNotTryToReconnect:Bool = false; // just in case you try catched it...
+        switch (code) {
+            case 4000:
+                Log.error('[CL VBS] Discord gave us an unknown error.');
+            case 4001:
+                Log.error('[CL VBS] We sent an invalid opcode?');
+            case 4002:
+                Log.error('[CL VBS] Discord couldn\'t decode our payload?');
+            case 4003:
+                if (_weSentZeroToDiscord) {
+                    Log.error('[CL VBS] We sent a payload before identifying?');
+                } else { 
+                    Log.error('[CL VBS] The session has been invalidated.');
+                }
+            case 4004:
+                throw 'Please provide a valid token.';
+                shouldNotTryToReconnect = true; 
+            case 4005:
+                Log.error('[CL VBS] More than one Identify payload sent?');
+            case 4007:
+                Log.error('[CL VBS] Mismatch in sequence when resuming?');
+            case 4008:
+                Log.error('[CL VBS] We\'ve been rate limited...');
+            case 4009:
+                Log.error('[CL VBS] The session timed out.');
+            case 4010:
+                throw 'Invalid shard given when Identifying.';
+                shouldNotTryToReconnect = true; 
+            case 4011:
+                throw 'You are required to shard your connection in order to connect.';
+                shouldNotTryToReconnect = true; 
+            case 4012:
+                throw 'Invalid API version given to Gateway.';
+                shouldNotTryToReconnect = true; 
+            case 4013:
+                throw 'Invalid intents.';
+                shouldNotTryToReconnect = true; 
+            case 4014:
+                Log.error('[CL VBS] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
+                Log.error('[CL VBS] If it isn\'t, please enable it in the Developer Portal:');
+                Log.error('[CL VBS] https://discord.com/developers/docs/topics/gateway#privileged-intents');
+                throw 'Privileged intent provided, this intent is disallowed.';
+                shouldNotTryToReconnect = true; 
+        }
+
+        if (!shouldNotTryToReconnect) {
+            Log.info('[CL VBS] Reconnect in progress...');
+            tryReconnection();
+        }
     }
 
     /**
@@ -257,13 +314,13 @@ class Gateway extends discord.utils.events.EventDispatcher {
                         resumeURL = data.d.resume_gateway_url;
                 }
 
-                var event:GatewayReceiveEvent = new GatewayReceiveEvent(data);
-                this.dispatchEvent(event);
-
             default:
                 trace(data);
                 return;
         }
+
+        var event:GatewayReceiveEvent = new GatewayReceiveEvent(data);
+        this.dispatchEvent(event);
     }
 
     /**
@@ -280,38 +337,23 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     /**
-     * Tries reconnecting to the Gateway,
-     * usually called 
+     * Tries reconnecting to the Gateway
      */
     private function tryReconnection()
     {
         try 
         {
-            #if html5
-            // On HTML5 the argument is a CloseEvent 
-            var e:js.html.CloseEvent = cast e;
-    
-            // run if it isnt blacklisted or if the exit was NOT clean
-            if (!blacklistedErrors.contains(e.code) || !e.wasClean)
-            {
-                // re-initialize the gateway if the resume gateway url is null
-                if (resumeURL == null)
-                    initializeWebsocket();
-                else
-                    reconnect(); // try reconncting
-            }
-            #else
-    
             // e is still unknown on other targets so we just going to ignore it lol
             if (resumeURL == null)
                 initializeWebsocket();
-            else
-                reconnect(); // try reconncting
-            #end
+            else {
+                Log.info('Trying to reconnect on $resumeURL...');
+                reconnect();
+            }
         }
         catch (ex)
         {
-            trace('${ex}, Cannot reconnect');
+            Log.error('${ex}, Cannot reconnect');
             shutDown();
         }
     }
@@ -319,7 +361,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     // Reconnect / Resume the connection to the gateway in case we get disconnected from it
     private function reconnect()
     {
-        trace('Trying to reconnect to ${resumeURL}');
+        Log.info('Trying to reconnect to ${resumeURL}');
         initializeWebsocket('${resumeURL}/?v=10&encoding=json');
     }
 
@@ -340,11 +382,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
     private function send(data:String)
     {
+        var opcodeSent:Int = Json.parse(data)?.op ?? -1;
+
+        if (opcodeSent == Opcodes.DISPATCH) _weSentZeroToDiscord = true;
+
         if (!initialized) {
             trace('WebSocket not initialized (Client-Denied Send)');
             return;
         } else {
-            trace('Sending ${Json.parse(data)?.op ?? '?'}');
+            trace('Sending $opcodeSent');
         }
 
         ws.send(data);

@@ -19,7 +19,7 @@ class WebSocketCommon {
     private var _lastError:Dynamic = null;
 
     public var onopen:Void->Void;
-    public var onclose:Void->Void;
+    public var onclose:Dynamic->Dynamic->Void;
     public var onerror:Dynamic->Void;
     public var onmessage:MessageType->Void;
 
@@ -144,6 +144,11 @@ class WebSocketCommon {
 
     public function close() {
         if (state != State.Closed) {
+            var b1 = _payload.readByte();
+            var b2 = _payload.readByte();
+            var code = (b1<<8) + (b2);
+            var message = _payload.readAllAvailableBytes().toString();
+
             try {
                 Log.debug("Closed", id);
                 sendFrame(Bytes.alloc(0), OpCode.Close);
@@ -152,7 +157,7 @@ class WebSocketCommon {
             } catch (e:Dynamic) { }
 
             if (onclose != null) {
-                onclose();
+                onclose(code, message);
             }
         }
     }
@@ -272,6 +277,16 @@ class WebSocketCommon {
 
         if (needClose == true) { // dont want to send the Close frame here
             if (state != State.Closed) {
+                // these bytes are 2 header bytes?
+                // L-69, L-70 strips them away?
+                var spareByte = _buffer.readByte();
+                var spareByte2 = _buffer.readByte();
+                // the actual code bytes
+                var b1 = _buffer.readByte();
+                var b2 = _buffer.readByte();
+                var code = (b1<<8) + (b2);
+                var message = _buffer.readAllAvailableBytes().toString();
+                
                 try {
                     Log.debug("Closed", id);
                     state = State.Closed;
@@ -279,7 +294,7 @@ class WebSocketCommon {
                 } catch (e:Dynamic) { }
 
                 if (onclose != null) {
-                    onclose();
+                    onclose(code, message);
                 }
             }
         }

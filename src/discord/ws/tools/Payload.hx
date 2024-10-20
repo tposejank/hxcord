@@ -48,7 +48,7 @@ class IdentifyPayload extends Payload
 
         // TODO, device detection n stuff for html5
         super(IDENTIFY, {
-            token: "hi discord im testing :3", // token
+            token: token, // token
             intents: intents.value,
             properties: 
             {
