@@ -1,9 +1,9 @@
 package discord;
 
 import haxe.Json;
-import discord.types.Intents;
-import discord.ws.Gateway;
-import discord.user.User.ClientUser;
+import discord.Flags.Intents;
+import discord.Gateway;
+import discord.User.ClientUser;
 import discord.utils.events.EventDispatcher;
 import discord.utils.events.GatewayReceiveEvent;
 

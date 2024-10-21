@@ -1,4 +1,4 @@
-package discord.types;
+package discord;
 
 /**
  * The bit-wise integers which represent each intent.

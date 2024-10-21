@@ -1,4 +1,4 @@
-package discord.types;
+package discord;
 
 class ConnectionState {
 

@@ -1,15 +1,17 @@
-package discord.utils.log.ansi;
+package discord.log.ansi;
 
-import discord.utils.log.ansi.colors.Color;
-import discord.utils.log.ansi.colors.Style;
+import discord.log.ansi.colors.ColorTools;
+import discord.log.ansi.colors.ColorMode;
+import discord.log.ansi.colors.Color;
+import discord.log.ansi.colors.Style;
 
 class Paint {
 
 	// INTERNAL HELPER FUNCTIONS ////////////////////////////////////
 
 	inline private static function command(com:String) : String {
-		if (discord.utils.log.ansi.Mode.mode == Bare) return "";
-		else return discord.utils.log.ansi.Command.make(com + "m");
+		if (Mode.mode == Bare) return "";
+		else return Command.make(com + "m");
 }
 
 	inline private static function _RGB(mode : String, r:Int, g:Int, b:Int) : String
@@ -25,10 +27,10 @@ class Paint {
 	}
 
 	inline private static function _CM256Helper(mode : String, index : Int) : String {
-		switch(discord.utils.log.ansi.colors.ColorMode.mode) {
+		switch(discord.log.ansi.colors.ColorMode.mode) {
 			case CM16:
-				var newColor = discord.utils.log.ansi.colors.ColorTools.cm256ToCM8(index);
-				var bright = discord.utils.log.ansi.colors.ColorTools.cm256IsBright(index);
+				var newColor = ColorTools.cm256ToCM8(index);
+				var bright = ColorTools.cm256IsBright(index);
 				return _CM8(mode, newColor, bright);
 
 			default:
@@ -37,15 +39,15 @@ class Paint {
 	}
 
 	inline private static function _trueColorHelper(mode : String, r : Int, g : Int, b : Int)  : String {
-		switch(discord.utils.log.ansi.colors.ColorMode.mode) {
+		switch(discord.log.ansi.colors.ColorMode.mode) {
 
 			case CM16:
-				var newColor = discord.utils.log.ansi.colors.ColorTools.rgbToCM8(r,g,b);
-				var bright = discord.utils.log.ansi.colors.ColorTools.rgbIsBright(r,g,b);
+				var newColor = ColorTools.rgbToCM8(r,g,b);
+				var bright = ColorTools.rgbIsBright(r,g,b);
 				return _CM8(mode, newColor, bright);
 
 			case CM256:
-				var index = discord.utils.log.ansi.colors.ColorTools.rgbToCM256(r,g,b);
+				var index = ColorTools.rgbToCM256(r,g,b);
 				return _CM256(mode,index);
 
 			case TRUE_COLOR:
@@ -253,7 +255,7 @@ class Paint {
 	 */
 	public static function paintPreserve(text : Dynamic, ?fg : Color, ?bg : Color, ?flags : Int = 0) : String {
 			
-		var sets = discord.utils.log.ansi.CommandTools.splitByCodeSets(text);
+		var sets = CommandTools.splitByCodeSets(text);
 
 		var newtext = "";
 		for (pair in sets) {

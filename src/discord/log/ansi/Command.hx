@@ -1,4 +1,6 @@
-package discord.utils.log.ansi;
+package discord.log.ansi;
+
+import discord.log.ansi.colors.ColorTools;
 
 /**
  * General ANSI commands, for text appearance @see ansi.Paint
@@ -97,7 +99,7 @@ class Command {
 	public static function write(r:Int, c:Int, text:String) : Int {
 		moveCursor(r,c);
 		Sys.print(text);
-		var length = discord.utils.log.ansi.colors.ColorTools.length(text);
+		var length = ColorTools.length(text);
 		return length + c;
 	}
 
@@ -126,7 +128,7 @@ class Command {
 	 * Gives the current cursor postion
 	 */
 	public static function cursorPosition() : Null<{ r:Int, c:Int }> {
-		if (discord.utils.log.ansi.Mode.mode == Bare) return null;
+		if (Mode.mode == Bare) return null;
 
 		exec('6n');
 
@@ -167,7 +169,7 @@ class Command {
 	 * Gets the size of the current terminal window
 	 */
 	public static function getSize() : Null<{ r:Int, c:Int }> {
-		if (discord.utils.log.ansi.Mode.mode == Bare) return null;
+		if (Mode.mode == Bare) return null;
 
 		// originally used saveCursor / restoreCursor but i got
 		// weird stuff where it would not restore to the same point
@@ -182,18 +184,18 @@ class Command {
 
 	/*** Internal helper function for sending a command to the terminal */
 	inline public static function exec(command:String) {
-		if (discord.utils.log.ansi.Mode.mode != Bare) Sys.print(make(command));
+		if (Mode.mode != Bare) Sys.print(make(command));
 	}
 
 	// TODO: need to decide if i want to include DEC commands too
 	// http://gist.github.com/fnky/45871934aabd01cfb17a3a4f7296797
 	/*** Internal helper function for sending DEC commands */
 	inline public static function execDec(command:String) {
-		if (discord.utils.log.ansi.Mode.mode != Bare) Sys.print('$ESC$command');
+		if (Mode.mode != Bare) Sys.print('$ESC$command');
 	}
 
 	inline public static function make(command:String) : String {
-		if (discord.utils.log.ansi.Mode.mode == Bare) return "";
+		if (Mode.mode == Bare) return "";
 		else return '$ESC[$command';
 	}
 }

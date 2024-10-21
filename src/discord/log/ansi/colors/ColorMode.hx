@@ -1,4 +1,4 @@
-package discord.utils.log.ansi.colors;
+package discord.log.ansi.colors;
 
 enum abstract ColorMode(Int) {
 	var CM16 = 0;
@@ -13,14 +13,14 @@ function check() mode = get();
 function get() {
 
 	// checking for truecolor.
-	Sys.print(discord.utils.log.ansi.Paint.colorRGB(1,1,1));
+	Sys.print(Paint.colorRGB(1,1,1));
 	Sys.print("\033P$qm\033\\");
-	Sys.print(discord.utils.log.ansi.Paint.reset());
+	Sys.print(Paint.reset());
 	if (getColorMode() == "38") return TRUE_COLOR;
 
-	Sys.print(discord.utils.log.ansi.Paint.color256(132));
+	Sys.print(Paint.color256(132));
 	Sys.print("\033P$qm\033\\");
-	Sys.print(discord.utils.log.ansi.Paint.reset());
+	Sys.print(Paint.reset());
 	if (getColorMode() == "95m") return CM256;
 
 	return CM16;

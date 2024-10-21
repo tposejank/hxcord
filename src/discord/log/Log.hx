@@ -1,12 +1,12 @@
-package discord.utils.log;
+package discord.log;
 
 //call Log.init somewhere
 
 import haxe.Constraints.Function;
 import haxe.PosInfos;
 
-import discord.utils.log.ansi.Paint.*;
-import discord.utils.log.ansi.colors.Color;
+import discord.log.ansi.Paint.*;
+import discord.log.ansi.colors.Color;
 
 using StringTools;
 

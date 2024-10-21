@@ -1,6 +1,7 @@
-package discord.ws.tools;
+package discord.ws;
 
-import discord.types.Intents;
+import discord.Gateway.Opcodes;
+import discord.Flags.Intents;
 import haxe.Json;
 
 // https://discord.com/developers/docs/topics/gateway-events#payload-structure

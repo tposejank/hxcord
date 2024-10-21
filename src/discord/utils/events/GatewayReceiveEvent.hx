@@ -1,7 +1,7 @@
 package discord.utils.events;
 
 import discord.utils.events.EventDispatcher.Event;
-import discord.ws.tools.Payload;
+import discord.ws.Payload;
 
 /**
  * An event called when the Web Socket receives a payload message.

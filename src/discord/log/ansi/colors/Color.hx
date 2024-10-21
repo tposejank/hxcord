@@ -1,4 +1,4 @@
-package discord.utils.log.ansi.colors;
+package discord.log.ansi.colors;
 
 enum abstract Color(String) {
 	var Black = "0";

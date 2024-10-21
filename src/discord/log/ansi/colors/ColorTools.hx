@@ -1,4 +1,4 @@
-package discord.utils.log.ansi.colors;
+package discord.log.ansi.colors;
 
 // TODO: this may not be correctly organized, may want to move stuff around?
 
@@ -130,8 +130,8 @@ class ColorTools {
 
 		for (i in 0 ... string.length) {
 			switch(string.charAt(i)) {
-				case discord.utils.log.ansi.Command.ESC: count = false;
-				case discord.utils.log.ansi.Command.END if (!count):
+				case Command.ESC: count = false;
+				case Command.END if (!count):
 					length -= 1; // to uncount this character, which will be counted next.
 					count = true;
 				default:
@@ -155,7 +155,7 @@ class ColorTools {
 		*
 		*/
 	static public function pad(string : String, length: Int, ?paddingChar : String = " ") : String {
-		var l = discord.utils.log.ansi.colors.ColorTools.length(string);
+		var l = ColorTools.length(string);
 		for (_ in l ... length) {
 			string += paddingChar;
 		}
@@ -172,8 +172,8 @@ class ColorTools {
 		for (i in 0 ... string.length) {
 			var char = string.charAt(i);
 			switch(char) {
-				case discord.utils.log.ansi.Command.ESC: count = false;
-				case discord.utils.log.ansi.Command.END if (!count):
+				case Command.ESC: count = false;
+				case Command.END if (!count):
 					length -= 1; // to uncount this character, which will be counted next.
 					count = true;
 				default:

@@ -1,4 +1,4 @@
-package discord.utils.log.ansi.colors;
+package discord.log.ansi.colors;
 
 enum abstract Style(Int) to Int {
 	var None = 0;

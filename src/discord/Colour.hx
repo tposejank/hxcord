@@ -1,4 +1,4 @@
-package discord.types;
+package discord;
 
 /**
  * This class is basically a hard copy of 

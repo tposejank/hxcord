@@ -1,4 +1,4 @@
-package discord.utils.log.ansi;
+package discord.log.ansi;
 
 class CommandTools {
 

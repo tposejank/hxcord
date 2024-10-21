@@ -1,12 +1,12 @@
-package discord.user;
+package discord;
 
-import discord.types.ConnectionState;
-import discord.types.Colour;
-import discord.utils.Utils;
+import discord.State.ConnectionState;
+import discord.Colour;
+import discord.Utils;
 import haxe.io.Bytes;
 import discord.types.OneOfTwo;
 import discord.types.IMessageable;
-import discord.types.Types.Snowflake;
+import discord.types.Snowflake;
 
 typedef PartialUserPayload = {
     var id:String;

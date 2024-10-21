@@ -1,4 +1,4 @@
-package discord.utils;
+package discord;
 
 import haxe.io.Bytes;
 import haxe.crypto.Base64;
