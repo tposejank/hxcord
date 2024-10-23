@@ -5,16 +5,40 @@ import discord.utils.events.GatewayResetEvent;
 import discord.log.Log;
 import discord.utils.events.GatewayReceiveEvent;
 import haxe.ws.Types.MessageType;
-import discord.ws.Payload;
-import discord.ws.Payload.HeartbeatPayload;
-import discord.ws.Payload.IdentifyPayload;
-import discord.ws.Payload.ResumePayload;
 import haxe.ws.WebSocket;
 import haxe.Json;
 
 enum abstract GatewayEvent(String) from String to String {
     var GATEWAY_RECEIVE_EVENT = 'GATEWAY_RECEIVE_EVENT';
     var GATEWAY_RESET_EVENT = 'GATEWAY_RESET_EVENT';
+}
+
+@:structInit
+@:publicFields
+class Payload
+{
+    var op:Opcodes;
+    var d:Dynamic;
+    var s:Null<Int> = null;
+    var t:Null<String> = null;
+
+    public function new(op:Opcodes, d:Dynamic, ?s:Null<Int>, ?t:Null<String>)
+    {
+        this.op = op;
+        this.d = d;
+        this.s = s;
+        this.t = t;
+    }
+
+    public function toString()
+    {
+        return Json.stringify({
+            op: this.op,
+            d: this.d,
+            s: this.s,
+            t: this.t
+        });
+    }
 }
 
 /**
@@ -58,18 +82,10 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     private var resumeURL:String = null;
 
-    #if html5
-    /**
-     * Error codes for HTML5 to ignore.
-     */
-    private var blacklistedErrors:Array<Int> = [4004, 4010, 4011, 4012, 4013, 4014];
-    #end
-
     /**
      * The ammount of time to pass between each Heartbeat
      * 
      * Received in the `HELLO` event (Opcode 10) 
-     * Keep-Alive
      */
     private var heartbeatDelay:Int = 0; // MS
 
@@ -117,7 +133,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     /**
-     * Forcibly shut down the WebSocket.
+     * Shut down the WebSocket.
      */
     public function shutDown():Void {
         ws.close();
@@ -229,7 +245,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 Log.error('[CL VBS] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
                 Log.error('[CL VBS] If it isn\'t, please enable it in the Developer Portal:');
                 Log.error('[CL VBS] https://discord.com/developers/docs/topics/gateway#privileged-intents');
-                throw 'Privileged intent provided, this intent is disallowed.';
+                throw 'Privileged intents ${intents.value} provided, these intents are disallowed.';
                 shouldNotTryToReconnect = true; 
         }
 
@@ -250,7 +266,6 @@ class Gateway extends discord.utils.events.EventDispatcher {
      * @param msg Message (JSON content) sent by the Gateway
      */
     private function onMessage(msg:String) {
-        // trace('         ${msg}');
         final json:Dynamic = Json.parse(msg);
 
         final data:Payload =
@@ -271,6 +286,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 // The App just started
                 if (resumeURL == null) {
                     identify();
+                    heartbeat();
 
                     if (hb_timer != null) hb_timer.stop();
                     hb_timer = new haxe.Timer(heartbeatDelay);
@@ -290,7 +306,11 @@ class Gateway extends discord.utils.events.EventDispatcher {
                     });
                     
                     trace("Trying to reconnect from previous session");
-                    var payload:ResumePayload = new ResumePayload(_token, _sessionID, _lastSequenceNum);
+                    var payload:Payload = new Payload(RESUME, {
+                        token: this._token,
+                        session_id: this._sessionID,
+                        seq: this._lastSequenceNum
+                    });
                     send(payload.toString());
                 }
 
@@ -335,7 +355,16 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     private function identify()
     {
-        var payload:IdentifyPayload = new IdentifyPayload(_token, this.intents);
+        var payload:Payload = new Payload(IDENTIFY, {
+            token: this._token, // token
+            intents: this.intents.value,
+            properties: 
+            {
+                os: "Bot (discord.hx)",
+                browser: "Haxe",
+                device: "windows"
+            }
+        });
 
         // Can't access https://discord.com/api/v10/applications/ no more even with the auth token, Discord pls fix this
 
@@ -374,7 +403,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     // Keep-Alive
     private function heartbeat()
     {
-        var payload:HeartbeatPayload = new HeartbeatPayload(_lastSequenceNum);
+        var payload:Payload = new Payload(HEARTBEAT, null, _lastSequenceNum);
         if (ws.state == Closed)
         {
             trace('Failed to HeartBeat: Gateway is closed!');
@@ -398,6 +427,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
         } else {
             trace('Sending $opcodeSent');
         }
+
+        trace(data);
 
         ws.send(data);
     }

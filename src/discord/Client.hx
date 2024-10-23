@@ -1,5 +1,6 @@
 package discord;
 
+import discord.State.ConnectionState;
 import haxe.Json;
 import discord.Flags.Intents;
 import discord.Gateway;
@@ -33,6 +34,8 @@ class Client extends EventDispatcher {
      */
     public var user:ClientUser;
 
+    public var state:ConnectionState;
+
     public function new(_token:String, intents:Intents) {
         super();
 
@@ -40,12 +43,18 @@ class Client extends EventDispatcher {
         this.intents = intents;
         ws = new Gateway(this.token, intents);
 
+        this.state = new ConnectionState(this);
+
         ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, onMessage);
+        ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, state.on_dispatch);
     }
 
     /**
      * Connect to the Gateway and
      * begin operating the Client.
+     * 
+     * This is a blocking call, and nothing will run after this is called,
+     * unless explicitly called by `Client`.
      */
     public function run():Void {
         ws.initializeWebsocket();

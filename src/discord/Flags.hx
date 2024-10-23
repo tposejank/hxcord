@@ -223,7 +223,7 @@ class Intents {
      * 
      * ```haxe
      * intents = new Intents();
-     * intents.directMessagePolls = false;
+     * intents.directMessagePolls = true;
      * trace(intents.value); // 33554432
      * ```
      * 

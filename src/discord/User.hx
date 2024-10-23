@@ -7,6 +7,12 @@ import haxe.io.Bytes;
 import discord.types.OneOfTwo;
 import discord.types.IMessageable;
 import discord.types.Snowflake;
+import discord.Member;
+
+typedef AvatarDecorationData = {
+    var asset:String;
+    var sku_id:String;
+}
 
 typedef PartialUserPayload = {
     var id:String;
@@ -14,7 +20,7 @@ typedef PartialUserPayload = {
     var discriminator:String;
     @:optional var avatar:String;
     @:optional var global_name:String;
-    @:optional var avatar_decoration_data:Dynamic; //TBD
+    @:optional var avatar_decoration_data:AvatarDecorationData;
 }
 
 typedef UserPayload = {
@@ -26,8 +32,11 @@ typedef UserPayload = {
     var verified:Bool;
     @:optional var email:String;
     var flags:Int;
-    var premium_type:Dynamic; //TBD
+    var premium_type:Int;
     var public_flags:Int; //TBD
+
+    @:optional var banner:String;
+    @:optional var accent_color:Int;
 }
 
 class BaseUser extends Snowflake {
@@ -93,6 +102,13 @@ class BaseUser extends Snowflake {
     public var avatar_decoration_sku_id(get, never):String;
 
     /**
+     * `Asset`: Returns the user's banner asset, if available.
+     * 
+     * This information is only available via `Client.fetch_user`.
+     */
+    public var banner(get, never):Dynamic;
+
+    /**
      * A user's accent color is only shown if they do not have a banner.
      * This will only be available if the user explicitly sets a color.
      */
@@ -115,17 +131,15 @@ class BaseUser extends Snowflake {
      */
     public var created_at(get, never):Date;
 
-    private var raw_data:Dynamic;
     private var payload:UserPayload;
 
-    public function new(_state:ConnectionState, _payload:OneOfTwo<UserPayload, PartialUserPayload>, ?_raw_data:Dynamic) {
+    public function new(_state:ConnectionState, _payload:OneOfTwo<UserPayload, PartialUserPayload>) {
         this._state = _state;
-        this.raw_data = _raw_data;
         this.payload = _payload;
-        this._update(_payload, _raw_data);
+        this._update(_payload);
     }
 
-    private function _update(_payload:UserPayload, ?_raw_data:Dynamic) {
+    private function _update(_payload:UserPayload) {
         // PartialUserPayload
         this.name = _payload.username;
         this.id = _payload.id;
@@ -134,9 +148,8 @@ class BaseUser extends Snowflake {
         this._avatar = _payload.avatar;
         this._avatar_decoration_data = _payload.avatar_decoration_data ?? null;
         // UserPayload
-        // _raw_data
-        this._banner = _raw_data?.banner ?? null;
-        this._accent_colour = _raw_data?.accent_color ?? null;
+        this._banner = _payload.banner ?? null;
+        this._accent_colour = _payload.accent_color ?? null;
         // _payload
         this._public_flags = _payload.public_flags ?? 0;
         this.bot = _payload.bot ?? false;
@@ -155,6 +168,7 @@ class BaseUser extends Snowflake {
 
     // Unfortunately, in order to override all the operators,
     // BaseUser must be an abstract. Thumbs down!
+    // Tip: "==" a equals b operator
 
     public function _to_minimal_user_json() {
         return {
@@ -172,24 +186,34 @@ class BaseUser extends Snowflake {
         return null;
     }
 
+    // TBD
     public function get_avatar():Dynamic {
         return null;
     }
 
+    // TBD
     public function get_default_avatar():Dynamic {
         return null;
     }
 
+    // TBD
     public function get_display_avatar():Dynamic {
         return avatar ?? default_avatar;
     }
 
+    // TBD
     public function get_avatar_decoration():Dynamic {
         return null;
     }
 
+    // TBD
     public function get_avatar_decoration_sku_id():String {
         return _avatar_decoration_data?.sku_id ?? null;
+    }
+
+    // TBD
+    public function get_banner():Dynamic {
+        return null;
     }
 
     public function get_accent_colour():Int {
@@ -212,6 +236,15 @@ class BaseUser extends Snowflake {
     public function get_display_name():String {
         return this.global_name ?? this.name;
     }
+
+    public function mentioned_in(message:Dynamic):Bool { // TBD: Change this to Message
+        if (message.mention_everyone)
+            return true;
+
+        return message.mentions.exists(function(user:User) { // TBD: Change this to Member 
+            return user.id == this.id;
+        });
+    }
 }
 
 class ClientUser extends BaseUser {
@@ -223,12 +256,12 @@ class ClientUser extends BaseUser {
     public var mutual_guilds(get, never):Array<Dynamic>; // TBD
     // Guild
 
-    public function new(_state:ConnectionState, _payload:UserPayload, _raw_data:Dynamic) {
-        super(_state, _payload, _raw_data);
+    public function new(_state:ConnectionState, _payload:UserPayload) {
+        super(_state, _payload);
     }
 
-    override public function _update(_payload:UserPayload, ?_raw_data:Dynamic) {
-        super._update(_payload, _raw_data);
+    override public function _update(_payload:UserPayload) {
+        super._update(_payload);
 
         this.verified = _payload.verified;
         this.locale = _payload.locale;
