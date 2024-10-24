@@ -19,6 +19,6 @@ typedef PartialPresenceUpdate = {
     var user: UserPayload;
     var guild_id: String;
     var status: StatusType;
-    // var activities: List[Activity];
+    var activities: Array<Dynamic>; // Array<Activity>
     var client_status: ClientStatus;
 }

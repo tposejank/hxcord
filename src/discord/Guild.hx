@@ -133,12 +133,16 @@ typedef GuildPayload = {
     // @:optional var voice_states: NotRequired[List[GuildVoiceState]]
     @:optional var members: Array<MemberPayload>;
     @:optional var channels: Array<Dynamic>; // GuildChannel
-    @:optional var presences: PartialPresenceUpdate;
+    @:optional var presences: Array<PartialPresenceUpdate>;
     // @:optional var threads: NotRequired[List[Thread]]
     @:optional var max_presences: Int;
     @:optional var max_members: Int;
     @:optional var premium_subscription_count: Int;
     @:optional var max_video_channel_users: Int;
+
+    @:optional var approximate_member_count: Int;
+    @:optional var approximate_presence_count: Int;
+    @:optional var premium_progress_bar_enabled: Bool;    
 }
 
 class Guild extends Snowflake {
@@ -154,44 +158,98 @@ class Guild extends Snowflake {
 
     public var unavailable:Bool;
 
+    /**
+     * The guild name.
+     */
     public var name:String;
+    /**
+     * The guild's verification level.
+     */
     public var verification_level:VerificationLevel;
+    /**
+     *  The guild's explicit content filter.
+     */
     public var explicit_content_filter:ExplicitContentFilterLevel;
+    /**
+     * The number of seconds until someone is moved to the AFK channel.
+     */
     public var afk_timeout:Int;
 
     private var _icon:String;
     private var _banner:String;
 
+    /**
+     * A list of features that the guild has. The features that a guild can have are subject to arbitrary change by Discord. A list of guild features can be found in the Discord documentation.
+     */
     public var features:Array<GuildFeature>;
 
     private var _splash:String;
     private var _system_channel_id:String;
 
+    /**
+     * The guild's description.
+     */
     public var description:String;
+    /**
+     * The maximum amount of presences for the guild.
+     */
     public var max_presences:Int;
+    /**
+     * The maximum amount of members for the guild.
+     */
     public var max_members:Int;
+    /**
+     * The maximum amount of users in a video channel.
+     */
     public var max_video_channel_users:Int;
+    /**
+     * The premium tier for this guild. Corresponds to "Nitro Server" in the official UI. The number goes from 0 to 3 inclusive.
+     */
     public var premium_tier:PremiumTier;
+    /**
+     * The number of "boosts" this guild currently has.
+     */
     public var premium_subscription_count:Int;
+    /**
+     * The guild's vanity url code, if any
+     */
     public var vanity_url_code:String;
+    /**
+     * Indicates if the guild has widget enabled.
+     */
     public var widget_enabled:Bool;
 
     private var _widget_channel_id:String;
     private var _system_channel_flags:Int;
 
+    /**
+     * The preferred locale for the guild. Used when filtering Server Discovery results to a specific language.
+     */
     public var preferred_locale:String;
 
     private var _discovery_splash:String;
     private var _rules_channel_id:String;
     private var _public_updates_channel_id:String;
 
+    /**
+     * The guild's NSFW level.
+     */
     public var nsfw_level:NSFWLevel;
+    /**
+     * The guild's Multi-Factor Authentication requirement level.
+     */
     public var mfa_level:MFALevel;
+    /**
+     * The ID of the member that owns the guild.
+     */
     public var owner_id:String;
 
     private var _large:Bool;
     private var _afk_channel_id:String;
     private var _incidents_data:IncidentData;
+	var approximate_presence_count:Null<Int>;
+	var approximate_member_count:Null<Int>;
+	var premium_progress_bar_enabled:Null<Bool>;
 
     public function new(data:GuildPayload, _state:ConnectionState) {
         this._state = _state;
@@ -206,6 +264,8 @@ class Guild extends Snowflake {
         this.explicit_content_filter = data.explicit_content_filter;
         this.afk_timeout = data.afk_timeout;
         var state:ConnectionState = this._state;
+
+        
         // for (role in data.roles) {
         //   var role:Role = new Role(this, role, state);
         //   this._roles.set(role.id, role);
@@ -243,13 +303,33 @@ class Guild extends Snowflake {
         // this._safety_alerts_channel_id = data.safety
         this.nsfw_level = data.nsfw_level;
         this.mfa_level = data.mfa_level;
-        // this.approximate_presence_count = data.approximate
-        // this.approximate_member_count = data.appro
-        // this.premium_progress_bar_enabled = data.premium_progress_bar_enabled
+        this.approximate_presence_count = data.approximate_presence_count;
+        this.approximate_member_count = data.approximate_member_count;
+        this.premium_progress_bar_enabled = data.premium_progress_bar_enabled;
         this.owner_id = data.owner_id;
-        var count = _member_count ?? 0;
+        var count:Int = _member_count ?? 0;
         this._large = count >= 250;
         this._afk_channel_id = data.afk_channel_id;
         this._incidents_data = data.incidents_data;
+
+        for (memberData in data.members) {
+            var member:Member = new Member(memberData, this, state);
+            _add_member(member);
+        }
+
+        for (presence in data.presences) {
+            var user_id = presence.user.id;
+            var member = get_member(user_id);
+            if (member != null)
+                member._presence_update(presence, null);
+        }
+    }
+
+    public function get_member(user_id:String) {
+        return this._members.get(user_id);
+    }
+
+    public function _add_member(member:Member):Void {
+        this._members.set(member.id, member);
     }
 }

@@ -33,7 +33,7 @@ typedef UserPayload = {
     @:optional var email:String;
     var flags:Int;
     var premium_type:Int;
-    var public_flags:Int; //TBD
+    var public_flags:Null<Int>; //TBD
 
     @:optional var banner:String;
     @:optional var accent_color:Int;
@@ -45,10 +45,11 @@ class BaseUser extends Snowflake {
     public var global_name:String;
     public var bot:Bool;
     public var system:Bool;
-    private var _avatar:String;
+    public var _avatar:String;
     private var _banner:String;
     private var _accent_colour:Int;
-    private var _public_flags:Int;
+    public var _public_flags:Int;
+    public var _avatar_decoration_data:AvatarDecorationData; //TBD
 
     private var _state:ConnectionState;
 
@@ -84,8 +85,6 @@ class BaseUser extends Snowflake {
      * `Asset`: Returns the user's display avatar.
      */
     public var display_avatar(get, never):Dynamic;
-
-    private var _avatar_decoration_data:Dynamic; //TBD
 
     /**
      * `Asset`: Returns the avatar decoration the user has.
@@ -131,11 +130,8 @@ class BaseUser extends Snowflake {
      */
     public var created_at(get, never):Date;
 
-    private var payload:UserPayload;
-
     public function new(_state:ConnectionState, _payload:OneOfTwo<UserPayload, PartialUserPayload>) {
         this._state = _state;
-        this.payload = _payload;
         this._update(_payload);
     }
 
@@ -206,7 +202,6 @@ class BaseUser extends Snowflake {
         return null;
     }
 
-    // TBD
     public function get_avatar_decoration_sku_id():String {
         return _avatar_decoration_data?.sku_id ?? null;
     }
@@ -216,11 +211,11 @@ class BaseUser extends Snowflake {
         return null;
     }
 
-    public function get_accent_colour():Int {
+    public function get_accent_colour():Colour {
         return new Colour(_accent_colour ?? 0);
     }
 
-    public function get_colour():Int {
+    public function get_colour():Colour {
         return new Colour(0);        
     }
 

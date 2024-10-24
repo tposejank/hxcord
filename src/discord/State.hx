@@ -1,5 +1,6 @@
 package discord;
 
+import discord.log.Log;
 import discord.Gateway.Payload;
 import discord.utils.events.GatewayReceiveEvent;
 import discord.User.UserPayload;
@@ -22,6 +23,7 @@ class ConnectionState {
         else {
             var user:User = new User(this, data);
             _users.set(user_id, user);
+            trace('Created user $user_id');
             return user;
         }
     }
@@ -32,6 +34,10 @@ class ConnectionState {
         switch(payload.t) {
             case 'GUILD_CREATE':
                 parse_guild_create(payload.d);
+            case 'PRESENCE_UPDATE':
+                parse_presence_update(payload.d);
+            case 'MESSAGE_CREATE':
+                readAloud(payload.d);
         }
     }
 
@@ -69,5 +75,39 @@ class ConnectionState {
         } else {
             // client.dispatchEvent();
         }
+    }
+
+    public function parse_presence_update(data:Dynamic) {
+        var guild_id = data.guild_id;
+
+        var guild:Guild = _get_guild(guild_id);
+        if (guild == null) {
+            Log.error('PRESENCE_UPDATE is referencing an unknown guild ID $guild_id, discarding.');
+            return;
+        }
+
+        var user = data.user; // No need to convert this to a UserPayload
+        var member_id = user.id;
+        var member:Member = guild.get_member(member_id);
+        if (member == null) {
+            Log.error('PRESENCE_UPDATE is referencing an unknown member ID $member_id in guild $guild_id, discarding.');
+            return;
+        }
+
+        if (member._presence_update(data, data.user) != null) {
+            //dispatch('user_update')
+        }
+        //dispatch('presence_update')
+    }
+
+    public function readAloud(data:Dynamic) {
+        trace("Hello");
+
+        var guild = _guilds.get('1');
+        trace(guild.name);
+        var member = guild.get_member("1");
+        trace(member.id);
+        trace(member.name);
+        trace(member.activities);
     }
 }
