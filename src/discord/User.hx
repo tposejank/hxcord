@@ -40,10 +40,25 @@ typedef UserPayload = {
 }
 
 class BaseUser extends Snowflake {
+    /**
+     * The user's username.
+     */
     public var name:String;
+    /**
+     * The user's discriminator. This is a legacy concept that is no longer used.
+     */
     public var discriminator:String;
+    /**
+     * The user's global nickname, taking precedence over the username in display.
+     */
     public var global_name:String;
+    /**
+     * Specifies if the user is a bot account.
+     */
     public var bot:Bool;
+    /**
+     * Specifies if the user is a system user (i.e. represents Discord officially).
+     */
     public var system:Bool;
     public var _avatar:String;
     private var _banner:String;

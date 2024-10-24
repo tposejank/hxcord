@@ -86,7 +86,7 @@ class ConnectionState {
             return;
         }
 
-        var user = data.user; // No need to convert this to a UserPayload
+        var user = data.user; // No need to note type as UserPayload
         var member_id = user.id;
         var member:Member = guild.get_member(member_id);
         if (member == null) {

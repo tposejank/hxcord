@@ -71,45 +71,40 @@ class _ClientStatus {
     }
 }
 
-class UserAlias {
-    public static function create(cls: Type): Type {
-      // Iterate over User class fields
-        for (name in Reflect.fields(User)) {
-            // Skip private/special fields
-            if (name.startsWith("_")) continue;
-    
-            // Create a getter function that accesses _user.name
-            var getter = function(c:Dynamic) {
-                return Reflect.field(c._user, name);
-            };
-    
-            // Set the alias in the decorated class
-            Reflect.setProperty(cls, name, getter);
-        }
-    
-        return cls;
-    }
-}
-
 class Member extends Snowflake implements IMessageable {
     private var _user:User;
 
+    /**
+     * The member's username.
+     */
     public var name(get, set):String;
     public function get_name() return _user.name;
     public function set_name(n) return _user.name = n;
 
+    /**
+     * The member's discriminator. This is a legacy concept that is no longer used.
+     */
     public var discriminator(get, set):String;
     public function get_discriminator() return _user.discriminator;
     public function set_discriminator(n) return _user.discriminator = n;
 
+    /**
+     * The member's global nickname, taking precedence over the username in display.
+     */
     public var global_name(get, set):String;
     public function get_global_name() return _user.global_name;
     public function set_global_name(n) return _user.global_name = n;
 
+    /**
+     * Specifies if the user is a bot account.
+     */
     public var bot(get, set):Bool;
     public function get_bot() return _user.bot;
     public function set_bot(n) return _user.bot = n;
 
+    /**
+     * Specifies if the user is a system user (i.e. represents Discord officially).
+     */
     public var system(get, set):Bool;
     public function get_system() return _user.system;
     public function set_system(n) return _user.system = n;

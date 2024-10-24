@@ -247,9 +247,20 @@ class Guild extends Snowflake {
     private var _large:Bool;
     private var _afk_channel_id:String;
     private var _incidents_data:IncidentData;
-	var approximate_presence_count:Null<Int>;
-	var approximate_member_count:Null<Int>;
-	var premium_progress_bar_enabled:Null<Bool>;
+    public var approximate_presence_count:Int;
+    public var approximate_member_count:Int;
+    public var premium_progress_bar_enabled:Bool;
+
+    /**
+     * Returns a boolean indicating if the guild is "chunked".
+     * 
+     * A chunked guild means that :attr:`member_count` is equal to the
+     * number of members stored in the internal :attr:`members` cache.
+     * 
+     * If this value returns ``False``, then you should request for
+     * offline members.
+     */
+    public var chunked(get, never):Bool;
 
     public function new(data:GuildPayload, _state:ConnectionState) {
         this._state = _state;
@@ -331,5 +342,13 @@ class Guild extends Snowflake {
 
     public function _add_member(member:Member):Void {
         this._members.set(member.id, member);
+    }
+
+    // chunking is not a priority right now
+    function get_chunked():Bool {
+        var count = this._member_count;
+        if (count == null) return false;
+
+        return count == Lambda.count(this._members);
     }
 }
