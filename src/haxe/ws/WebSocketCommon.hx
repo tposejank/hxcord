@@ -279,13 +279,20 @@ class WebSocketCommon {
             if (state != State.Closed) {
                 // these bytes are 2 header bytes?
                 // L-69, L-70 strips them away?
-                var spareByte = _buffer.readByte();
-                var spareByte2 = _buffer.readByte();
-                // the actual code bytes
-                var b1 = _buffer.readByte();
-                var b2 = _buffer.readByte();
-                var code = (b1<<8) + (b2);
-                var message = _buffer.readAllAvailableBytes().toString();
+                var code = 0;
+                var message = 'Closed unexpectedly';
+                try {
+                    var spareByte = _buffer.readByte();
+                    var spareByte2 = _buffer.readByte();
+                    // the actual code bytes
+                    var b1 = _buffer.readByte();
+                    var b2 = _buffer.readByte();
+                    code = (b1<<8) + (b2);
+                    message = _buffer.readAllAvailableBytes().toString();
+                } catch (e:Dynamic) {
+                    code = 1000;
+                    message = 'Closed because of $e';
+                }
                 
                 try {
                     Log.debug("Closed", id);

@@ -48,12 +48,9 @@ class ConnectionState {
             var guild:Guild = _get_guild(data.id);
             if (guild != null) {
                 guild.unavailable = false;
-                trace('The guild is returning');
                 return guild;
             }
         }
-
-        trace('The guild is NOT available');
 
         var guild:Guild = new Guild(data, this);
         _guilds.set(guild.id, guild);
@@ -65,9 +62,6 @@ class ConnectionState {
         if (unavailable)
             return;
 
-        trace('CREATING GUILD!!');
-        trace(data);
-
         var guild:Guild = _get_create_guild(data);
 
         if (unavailable == false) {
@@ -75,7 +69,5 @@ class ConnectionState {
         } else {
             // client.dispatchEvent();
         }
-        
-        trace(_guilds.exists(data.id));
     }
 }
