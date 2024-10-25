@@ -61,7 +61,7 @@ class Client extends EventDispatcher {
     }
 
     public function onMessage(event:GatewayReceiveEvent) {
-        trace(Json.stringify(event.payload));
+        // trace(Json.stringify(event.payload));
     }
 
     function get_latency():Float {

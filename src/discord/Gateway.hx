@@ -226,7 +226,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
             case 4007:
                 Log.error('[CL VBS] Mismatch in sequence when resuming?');
             case 4008:
-                Log.error('[CL VBS] We\'ve been rate limited...');
+                Log.error('[CL VBS] Rate limit encountered.');
             case 4009:
                 Log.error('[CL VBS] The session timed out.');
             case 4010:
@@ -243,7 +243,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 shouldNotTryToReconnect = true; 
             case 4014:
                 Log.error('[CL VBS] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
-                Log.error('[CL VBS] If it isn\'t, please enable it in the Developer Portal:');
+                Log.error('[CL VBS] If it is not in +100 guilds, please enable it in the Developer Portal:');
                 Log.error('[CL VBS] https://discord.com/developers/docs/topics/gateway#privileged-intents');
                 throw 'Privileged intents ${intents.value} provided, these intents are disallowed.';
                 shouldNotTryToReconnect = true; 

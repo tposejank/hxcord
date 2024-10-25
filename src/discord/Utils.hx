@@ -25,6 +25,7 @@ class Utils {
         } else {
             throw 'Unsupported image type given';
         }
+        return '';
     }
 
     public static function bytesToBase64Data(data:Bytes):String {

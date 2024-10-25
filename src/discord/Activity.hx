@@ -10,15 +10,15 @@ enum abstract StatusType(String) from String to String {
 }
 
 typedef ClientStatus = {
-    var desktop: StatusType;
-    var mobile: StatusType;
-    var web: StatusType;
+    var desktop:StatusType;
+    var mobile:StatusType;
+    var web:StatusType;
 }
 
 typedef PartialPresenceUpdate = {
-    var user: UserPayload;
-    var guild_id: String;
-    var status: StatusType;
-    var activities: Array<Dynamic>; // Array<Activity>
-    var client_status: ClientStatus;
+    var user:UserPayload;
+    var guild_id:String;
+    var status:StatusType;
+    var activities:Array<Dynamic>; // Array<Activity>
+    var client_status:ClientStatus;
 }

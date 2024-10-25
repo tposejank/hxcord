@@ -1,9 +1,6 @@
-# disclaimer
-this is written by chatgpt. I will change this later
-
 # discord.hx
 
-**discord.hx** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py), which is built using Python. The project aims to provide an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing developers to build bots and automation for Discord servers using Haxe.
+**discord.hx** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py), which is built using Python. The project aims to provide an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing you to make a bot for Discord servers using Haxe.
 
 ## Features
 
@@ -16,7 +13,7 @@ this is written by chatgpt. I will change this later
 
 ## Installation
 
-To use discord.hx, simply add it as a dependency to your Haxe project by including it in your `haxelib.json` or `build.hxml` file:
+To use discord.hx, simply add it as a dependency to your Haxe project by including it in your `haxelib.json` or `build.hxml` file.
 
 Afterwards, you can install the library:
 ```hxml
@@ -26,34 +23,34 @@ haxelib install discord.hx
 Then, include the library in your code:
 
 ```haxe
-import discord.Client;
+import discord.commands.Bot;
 ```
 
 ## Usage Example
 Here is a simple example to get you started with a basic bot that responds to messages:
 
 ```haxe
-import discord.Client;
+import discord.commands.Bot;
 import discord.types.Intents;
 import discord.message.Message;
 
 class Main {
     static function main() {
-        var client = new Client("YOUR_BOT_TOKEN", Intents.all());
+        var bot:Bot = new Bot("YOUR_BOT_TOKEN", Intents.all());
 
-        client.addEventListener('MESSAGE_CREATE', function(message:Message) {
+        bot.addEventListener('MESSAGE_CREATE', function(message:Message) { // NOT YET SUPPORTED
             if (message.content.trim() == '!greet') {
                 message.reply(new Message('Hello!'));
             }
         });
 
-        client.run();
+        bot.run();
     }
 }
 ```
 
 ## Requirements
-- Haxe 4
+- Haxe 4.3+
 
 ## Supported platforms (not written by gpt)
 - Neko

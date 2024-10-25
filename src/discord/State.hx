@@ -37,7 +37,7 @@ class ConnectionState {
             case 'PRESENCE_UPDATE':
                 parse_presence_update(payload.d);
             case 'MESSAGE_CREATE':
-                readAloud(payload.d);
+                parse_message_create(payload.d);
         }
     }
 
@@ -45,7 +45,7 @@ class ConnectionState {
         return _guilds.get(guild_id);
     }
 
-    public function _add_guild(guild:Guild) {
+    public function _add_guild(guild:Guild):Void {
         _guilds.set(guild.id, guild);
     }
 
@@ -63,7 +63,7 @@ class ConnectionState {
         return guild;
     }
 
-    public function parse_guild_create(data:Dynamic) {
+    public function parse_guild_create(data:Dynamic):Void {
         var unavailable:Bool = data.unavailable;
         if (unavailable)
             return;
@@ -77,7 +77,7 @@ class ConnectionState {
         }
     }
 
-    public function parse_presence_update(data:Dynamic) {
+    public function parse_presence_update(data:Dynamic):Void {
         var guild_id = data.guild_id;
 
         var guild:Guild = _get_guild(guild_id);
@@ -94,13 +94,13 @@ class ConnectionState {
             return;
         }
 
-        if (member._presence_update(data, data.user) != null) {
+        if (member._presence_update(data, data.user)) {
             //dispatch('user_update')
         }
         //dispatch('presence_update')
     }
 
-    public function readAloud(data:Dynamic) {
+    public function parse_message_create(data:Dynamic):Void {
         trace("Hello");
 
         var guild = _guilds.get('1');

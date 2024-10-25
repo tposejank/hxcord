@@ -98,14 +98,14 @@ class Member extends Snowflake implements IMessageable {
     /**
      * Specifies if the user is a bot account.
      */
-    public var bot(get, set):Bool;
+    public var bot(get, set):Null<Bool>;
     public function get_bot() return _user.bot;
     public function set_bot(n) return _user.bot = n;
 
     /**
      * Specifies if the user is a system user (i.e. represents Discord officially).
      */
-    public var system(get, set):Bool;
+    public var system(get, set):Null<Bool>;
     public function get_system() return _user.system;
     public function set_system(n) return _user.system = n;
 
@@ -302,7 +302,7 @@ class Member extends Snowflake implements IMessageable {
         this.timed_out_until = null; //Date.fromString(data.communication_disabled_until);
     }
 
-    public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Null<Bool> {
+    public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Bool {
         this.activities = []; //activity.py
         for (activity in data.activities) {
             this.activities.push(activity);
@@ -313,10 +313,10 @@ class Member extends Snowflake implements IMessageable {
         if (user != null)
             return _update_inner_user(user);
 
-        return null;
+        return false;
     }
 
-    public function _update_inner_user(data:UserPayload):Null<Bool> {
+    public function _update_inner_user(data:UserPayload):Bool {
         var u = this._user;
         var original:Array<Dynamic> = [
             u.name, 
@@ -354,7 +354,7 @@ class Member extends Snowflake implements IMessageable {
             return true;
         }
 
-        return null;
+        return false;
     }
 
     public function send(message:String) {

@@ -1,4 +1,4 @@
-package discord.bot;
+package discord.commands;
 
 class Bot extends Client {
     

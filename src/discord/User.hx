@@ -55,15 +55,15 @@ class BaseUser extends Snowflake {
     /**
      * Specifies if the user is a bot account.
      */
-    public var bot:Bool;
+    public var bot:Null<Bool>;
     /**
      * Specifies if the user is a system user (i.e. represents Discord officially).
      */
-    public var system:Bool;
+    public var system:Null<Bool>;
     public var _avatar:String;
     private var _banner:String;
-    private var _accent_colour:Int;
-    public var _public_flags:Int;
+    private var _accent_colour:Null<Int>;
+    public var _public_flags:Null<Int>;
     public var _avatar_decoration_data:AvatarDecorationData; //TBD
 
     private var _state:ConnectionState;
@@ -126,13 +126,13 @@ class BaseUser extends Snowflake {
      * A user's accent color is only shown if they do not have a banner.
      * This will only be available if the user explicitly sets a color.
      */
-    public var accent_colour(get, never):Int;
+    public var accent_colour(get, never):Null<Int>;
 
     /**
      * A property that returns a colour denoting the rendered colour
      * for the user. This always returns 0xFF000000.
      */
-    public var colour(get, never):Int;
+    public var colour(get, never):Null<Int>;
 
     /**
      * Returns a string that allows you to mention the given user.
@@ -150,7 +150,7 @@ class BaseUser extends Snowflake {
         this._update(_payload);
     }
 
-    private function _update(_payload:UserPayload) {
+    private function _update(_payload:UserPayload):Void {
         // PartialUserPayload
         this.name = _payload.username;
         this.id = _payload.id;
@@ -181,7 +181,7 @@ class BaseUser extends Snowflake {
     // BaseUser must be an abstract. Thumbs down!
     // Tip: "==" a equals b operator
 
-    public function _to_minimal_user_json() {
+    public function _to_minimal_user_json():Dynamic {
         return {
             'username': this.name,
             'id': this.id,
@@ -251,17 +251,19 @@ class BaseUser extends Snowflake {
         if (message.mention_everyone)
             return true;
 
-        return message.mentions.exists(function(user:User) { // TBD: Change this to Member 
-            return user.id == this.id;
+        return message.mentions.exists(function(member:Member) {
+            return member.id == this.id;
         });
+
+        return false;
     }
 }
 
 class ClientUser extends BaseUser {
-    public var verified:Bool;
+    public var verified:Null<Bool>;
     public var locale:String;
-    public var mfaEnabled:Bool;
-    public var _flags:Int;
+    public var mfaEnabled:Null<Bool>;
+    public var _flags:Null<Int>;
 
     public var mutual_guilds(get, never):Array<Dynamic>; // TBD
     // Guild
