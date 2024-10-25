@@ -361,8 +361,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
             properties: 
             {
                 os: "Bot (discord.hx)",
-                browser: "Haxe",
-                device: "windows"
+                browser: #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end,
+                device: "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end
             }
         });
 
