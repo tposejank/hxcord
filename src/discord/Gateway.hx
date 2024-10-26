@@ -1,16 +1,15 @@
 package discord;
 
 import discord.Flags.Intents;
-import discord.utils.events.GatewayResetEvent;
+import discord.utils.events.GatewayEvents;
 import discord.log.Log;
-import discord.utils.events.GatewayReceiveEvent;
 import haxe.ws.Types.MessageType;
 import haxe.ws.WebSocket;
 import haxe.Json;
 
 enum abstract GatewayEvent(String) from String to String {
-    var GATEWAY_RECEIVE_EVENT = 'GATEWAY_RECEIVE_EVENT';
-    var GATEWAY_RESET_EVENT = 'GATEWAY_RESET_EVENT';
+    var GATEWAY_RECEIVE_EVENT = 'GATEWAY_RECEIVE';
+    var GATEWAY_RESET_EVENT = 'GATEWAY_RESET';
 }
 
 @:structInit
@@ -126,7 +125,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         sys.ssl.Socket.DEFAULT_VERIFY_CERT = false;
         #end
 
-        if (ws != null) this.dispatchEvent(new GatewayResetEvent());
+        if (ws != null) this.dispatchEvent(new GatewayReset());
 
         ws = new WebSocket(url);
         addListeners();
@@ -150,8 +149,6 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     private function addListeners()
     {
-        trace("Adding listeners to the new WebSocket client");
-
         // Listeners for start options
         ws.onopen = () ->
         {
@@ -276,7 +273,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
             t: json.t
         };
 
-        trace('Received ${data.op}');
+        Log.debug('Received ${data.op} (${data.t ?? 'Unknown Event Type'})');
+        Log.test(msg);
 
         switch(data.op)
         {
@@ -305,7 +303,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                         }
                     });
                     
-                    trace("Trying to reconnect from previous session");
+                    Log.info("Trying to reconnect from previous session");
                     var payload:Payload = new Payload(RESUME, {
                         token: this._token,
                         session_id: this._sessionID,
@@ -316,17 +314,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
             case HEARTBEAT_ACK:
                 lastHeartbeatAckReceived = Sys.time();
-                trace(latency * 1000);
-                trace('Acknowleged sent by Discord');
 
             case INVALID_SESSION:
                 // Look into this properly
                 // Because we have some cache we can straight up call the identify function, this only happens when trying to resume the previous session so we shouln't have a problem now
-                trace("Re-identifying due to invalid session, probably thrown by the resume handler");
+                Log.warn("Re-identifying due to invalid session, probably thrown by the resume handler");
                 identify();
 
             case RECONNECT:
-                trace("Gateway wants to reconnect, trying to reconnect");
+                Log.info("Gateway wants to reconnect, trying to reconnect");
                 tryReconnection();
 
             case DISPATCH:
@@ -345,8 +341,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 return;
         }
 
-        var event:GatewayReceiveEvent = new GatewayReceiveEvent(data);
-        this.dispatchEvent(event);
+        this.dispatchEvent(new GatewayReceive(data));
     }
 
     /**
@@ -396,7 +391,6 @@ class Gateway extends discord.utils.events.EventDispatcher {
     // Reconnect / Resume the connection to the gateway in case we get disconnected from it
     private function reconnect()
     {
-        Log.info('Trying to reconnect to ${resumeURL}');
         initializeWebsocket('${resumeURL}/?v=10&encoding=json');
     }
 
@@ -406,11 +400,10 @@ class Gateway extends discord.utils.events.EventDispatcher {
         var payload:Payload = new Payload(HEARTBEAT, null, _lastSequenceNum);
         if (ws.state == Closed)
         {
-            trace('Failed to HeartBeat: Gateway is closed!');
+            Log.error('Failed to HeartBeat: Gateway is closed!');
             return;
         }
 
-        trace("Heartbeat sent");
         lastHeartbeatSent = Sys.time();
         send(payload.toString());
     }
@@ -422,13 +415,13 @@ class Gateway extends discord.utils.events.EventDispatcher {
         if (opcodeSent == Opcodes.DISPATCH) _weSentZeroToDiscord = true;
 
         if (!initialized) {
-            trace('WebSocket not initialized (Client-Denied Send)');
+            Log.error('WebSocket not initialized (Client-Denied Send)');
             return;
-        } else {
-            trace('Sending $opcodeSent');
         }
 
-        trace(data);
+        Log.debug('Sending ${opcodeSent}');
+
+        Log.test(data);
 
         ws.send(data);
     }

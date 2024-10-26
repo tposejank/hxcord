@@ -283,9 +283,9 @@ class Member extends Snowflake implements IMessageable {
 
         this.id = _user.id;
 
-        this.joined_at = null; //Date.fromString(data.joined_at);
-        // Where is the ISO whatever support in haxe you idiots!
-        this.premium_since = null; //Date.fromString(data.premium_since);
+        this.joined_at = Utils.iso8601_to_date(data.joined_at);
+        if (data.premium_since != null)
+            this.premium_since = Utils.iso8601_to_date(data.premium_since);
 
         this._roles = data.roles;
         this._client_status = null;
@@ -357,7 +357,7 @@ class Member extends Snowflake implements IMessageable {
         return false;
     }
 
-    public function send(message:String) {
-
+    public function send(message:String):Dynamic {
+        return null;
     }
 }

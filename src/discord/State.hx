@@ -1,37 +1,55 @@
 package discord;
 
+// Events
+import discord.utils.events.EventDispatcher.Event;
+import discord.utils.events.GuildEvents;
+import discord.utils.events.GatewayEvents;
+
+import discord.Guild.GuildPayload;
 import discord.log.Log;
 import discord.Gateway.Payload;
-import discord.utils.events.GatewayReceiveEvent;
 import discord.User.UserPayload;
+import discord.User.ClientUser;
 
 class ConnectionState {
     public var _users:Map<String, User> = new Map<String, User>();
     public var _guilds:Map<String, Guild> = new Map<String, Guild>();
 
     public var client:Client;
+    public var dispatch:Event->Bool;
 
-    public function new(client:Client) {
+    public function new(client:Client, dispatch:Event->Bool) {
+        this.dispatch = dispatch;
         this.client = client;
     }
+
+    /**
+     * The user this Client is connected to.
+     */
+    public var user:ClientUser;
+    public var application_id:String;
+    public var application_flags:Dynamic;
 
     public function store_user(data:UserPayload):User {
         var user_id:String = data.id;
 
-        if (_users.exists(user_id))
+        if (_users.exists(user_id)) {
+            Log.test('Requested user $user_id already exists, returning cached');
             return _users.get(user_id);
-        else {
+        } else {
             var user:User = new User(this, data);
             _users.set(user_id, user);
-            trace('Created user $user_id');
+            Log.test('Created user $user_id');
             return user;
         }
     }
 
-    public function on_dispatch(event:GatewayReceiveEvent) {
+    public function on_dispatch(event:GatewayReceive) {
         var payload:Payload = event.payload;
 
         switch(payload.t) {
+            case 'READY':
+                parse_ready(payload.d);
             case 'GUILD_CREATE':
                 parse_guild_create(payload.d);
             case 'PRESENCE_UPDATE':
@@ -39,6 +57,12 @@ class ConnectionState {
             case 'MESSAGE_CREATE':
                 parse_message_create(payload.d);
         }
+    }
+
+    public function _add_guild_from_data(data:GuildPayload):Guild {
+        var guild:Guild = new Guild(data, this);
+        _add_guild(guild);
+        return guild;
     }
 
     public function _get_guild(guild_id:String):Guild {
@@ -54,6 +78,7 @@ class ConnectionState {
             var guild:Guild = _get_guild(data.id);
             if (guild != null) {
                 guild.unavailable = false;
+                guild._from_data(data);
                 return guild;
             }
         }
@@ -63,18 +88,38 @@ class ConnectionState {
         return guild;
     }
 
-    public function parse_guild_create(data:Dynamic):Void {
-        var unavailable:Bool = data.unavailable;
-        if (unavailable)
-            return;
+    public function clear(views:Bool = true) {
+        this.user = null;
+        this._users = [];
+        this._guilds = [];
+    }
 
-        var guild:Guild = _get_create_guild(data);
+    public function parse_ready(data:Dynamic):Void {
+        clear(false);
+        var user:ClientUser = new ClientUser(this, data.user);
+        this.user = user;
+        this._users.set(user.id, user);
 
-        if (unavailable == false) {
-            // client.dispatchEvent();
-        } else {
-            // client.dispatchEvent();
+        Log.debug('Created ClientUser for ${user.id}');
+
+        var userhandle = '@${user.name}';
+        if (user.discriminator != '0') userhandle = '${user.name}#${user.discriminator}';
+        Log.info('Logged in as ${userhandle}');
+
+        if (this.application_id == null) {
+            var application = data.application;
+
+            this.application_id = application?.id ?? null;
+            this.application_flags = application?.flags ?? null;
         }
+
+        // shitty compiler error fix
+        var guild_datas:Array<GuildPayload> = data.guilds;
+        for (guild_data in guild_datas) {
+            _add_guild_from_data(guild_data);
+        }
+
+        this.dispatch(new Connect());
     }
 
     public function parse_presence_update(data:Dynamic):Void {
@@ -98,6 +143,20 @@ class ConnectionState {
             //dispatch('user_update')
         }
         //dispatch('presence_update')
+    }
+
+    public function parse_guild_create(data:Dynamic):Void {
+        var unavailable:Bool = data.unavailable;
+        if (unavailable)
+            return;
+
+        var guild:Guild = _get_create_guild(data);
+
+        if (unavailable == false) {
+            this.dispatch(new GuildAvailable(guild));
+        } else {
+            this.dispatch(new GuildJoin(guild));
+        }
     }
 
     public function parse_message_create(data:Dynamic):Void {

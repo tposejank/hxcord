@@ -1,5 +1,7 @@
 package discord;
 
+import haxe.exceptions.NotImplementedException;
+import haxe.Int64;
 import discord.State.ConnectionState;
 import discord.Colour;
 import discord.Utils;
@@ -193,62 +195,65 @@ class BaseUser extends Snowflake {
     }
 
     // TBD
-    public function get_public_flags():Dynamic {
+    function get_public_flags():Dynamic {
         return null;
     }
 
-    public function get_avatar():Asset {
+    function get_avatar():Asset {
         if (_avatar != null)
             return Asset._from_avatar(this._state, this.id, this._avatar);
         return null;
     }
 
-    /**
-     * Unfortunately, Haxe is reigned by the Integer limit!
-     * @return Asset
-     */
-    public function get_default_avatar():Asset {
-        return Asset._from_default_avatar(this._state, 0);
+    function get_default_avatar():Asset {
+        var avatar_id:Int = 0;
+        if (this.discriminator == '0') {
+            avatar_id = Int64.toInt((Int64.parseString(this.id) >> 22) % 6);
+        } else {
+            avatar_id = Std.parseInt(discriminator) % 5;
+        }
+
+        return Asset._from_default_avatar(this._state, avatar_id);
     }
 
-    public function get_display_avatar():Asset {
+    function get_display_avatar():Asset {
         return avatar ?? default_avatar;
     }
 
-    public function get_avatar_decoration():Asset {
+    function get_avatar_decoration():Asset {
         if (this._avatar_decoration_data != null)
             return Asset._from_avatar_decoration(this._state, this._avatar_decoration_data.asset);
         return null;
     }
 
-    public function get_avatar_decoration_sku_id():String {
+    function get_avatar_decoration_sku_id():String {
         return _avatar_decoration_data?.sku_id ?? null;
     }
 
-    public function get_banner():Asset {
+    function get_banner():Asset {
         if (this._banner != null)
             return Asset._from_user_banner(this._state, this.id, this._banner);
         return null;
     }
 
-    public function get_accent_colour():Colour {
+    function get_accent_colour():Colour {
         return new Colour(_accent_colour ?? 0);
     }
 
-    public function get_colour():Colour {
+    function get_colour():Colour {
         return new Colour(0);        
     }
 
-    public function get_mention():String {
+    function get_mention():String {
         return '<@${this.id}>';
     }
 
     // TBD
-    public function get_created_at():Date {
-        return null;
+    function get_created_at():Date {
+        return Utils.snowflake_time(this.id);
     }
 
-    public function get_display_name():String {
+    function get_display_name():String {
         return this.global_name ?? this.name;
     }
 
@@ -264,14 +269,65 @@ class BaseUser extends Snowflake {
     }
 }
 
-class ClientUser extends BaseUser {
+class User extends BaseUser implements IMessageable {
+    // TBD
+    // DMChannel
+    /**
+     * Returns the channel associated with this user if it exists.
+     * 
+     * If this returns `null`, you can create a DM channel by calling the `create_dm` function.
+     */
+    public var dm_channel(get, never):Dynamic;
+
+    /**
+     * The guilds that the user shares with the client.
+     * 
+     * This will only return mutual guilds within the client's internal cache.
+     */
+    public var mutual_guilds(get, never):Array<Guild>;
+
+    // TBD
+    /**
+     * Send a Direct Message to this user.
+     * @param message 
+     */
+    public function send(message:String):Dynamic { // Message inbound, message outbound
+        return null;
+    }
+
+    // DMChannel
+    public function _get_channel():Dynamic {
+        var ch = create_dm();
+        return ch;
+    }
+
+    // TBD
+    function get_dm_channel():Dynamic {
+        // Note: return null from _get_private_channel_by_user if not found to trigger createDM correctly
+        return null; // self._state._get_private_channel_by_user(self.id)
+    }
+
+    function get_mutual_guilds():Array<Guild> {
+        return [null]; // [guild for guild in self._state._guilds.values() if guild.get_member(self.id)]
+    }
+
+    // TBD
+    public function create_dm():Dynamic {
+        var found = this.dm_channel;
+        if (found != null)
+            return found;
+
+        var state = _state;
+        var data:Dynamic = null; // state.http.start_private_message(this.id); //DMChannelPayload
+        return null; // state.add_dm_channel(data)
+    }
+}
+
+class ClientUser extends User {
     public var verified:Null<Bool>;
     public var locale:String;
     public var mfaEnabled:Null<Bool>;
     public var _flags:Null<Int>;
-
-    public var mutual_guilds(get, never):Array<Dynamic>; // TBD
-    // Guild
 
     public function new(_state:ConnectionState, _payload:UserPayload) {
         super(_state, _payload);
@@ -314,67 +370,20 @@ class ClientUser extends BaseUser {
         // TBD
     }
 
+    override public function send(message:String):Dynamic {
+        throw new NotImplementedException('You cannot message yourself');
+    }
+
     override public function toString():String {
-        return 'User(name=${name}, id=${id})';
+        return 'ClientUser(name=${name}, id=${id})';
     }
 
-    // TBD
-    public function get_mutual_guilds():Array<Dynamic> {
-        return [null]; // _state.guilds
-    }
-}
+    override function get_mutual_guilds():Array<Guild> {
+        var values:Array<Guild> = [];
+        for (value in _state._guilds.iterator()) {
+            values.push(value);
+        }
 
-class User extends BaseUser implements IMessageable {
-    // TBD
-    // DMChannel
-    /**
-     * Returns the channel associated with this user if it exists.
-     * 
-     * If this returns `null`, you can create a DM channel by calling the `create_dm` function.
-     */
-    public var dm_channel(get, never):Dynamic;
-
-    /**
-     * The guilds that the user shares with the client.
-     * 
-     * This will only return mutual guilds within the client's internal cache.
-     */
-    public var mutual_guilds(get, never):Array<Dynamic>; // TBD
-    // Guild
-
-    // TBD
-    /**
-     * Send a Direct Message to this user.
-     * @param message 
-     */
-    public function send(message:String) { // Message
-        return;
-    }
-
-    // DMChannel
-    public function _get_channel():Dynamic {
-        var ch = create_dm();
-        return ch;
-    }
-
-    // TBD
-    function get_dm_channel():Dynamic {
-        // Note: return null from _get_private_channel_by_user if not found to trigger createDM correctly
-        return null; // self._state._get_private_channel_by_user(self.id)
-    }
-
-    public function get_mutual_guilds():Array<Dynamic> {
-        return [null, null]; // [guild for guild in self._state._guilds.values() if guild.get_member(self.id)]
-    }
-
-    // TBD
-    public function create_dm():Dynamic {
-        var found = this.dm_channel;
-        if (found != null)
-            return found;
-
-        var state = _state;
-        var data:Dynamic = null; // state.http.start_private_message(this.id); //DMChannelPayload
-        return null; // state.add_dm_channel(data)
+        return values;
     }
 }

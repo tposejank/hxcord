@@ -257,7 +257,7 @@ class Guild extends Snowflake {
      * A chunked guild means that :attr:`member_count` is equal to the
      * number of members stored in the internal :attr:`members` cache.
      * 
-     * If this value returns ``False``, then you should request for
+     * If this value returns `false`, then you should request for
      * offline members.
      */
     public var chunked(get, never):Null<Bool>;
@@ -323,12 +323,12 @@ class Guild extends Snowflake {
         this._afk_channel_id = data.afk_channel_id;
         this._incidents_data = data.incidents_data;
 
-        for (memberData in data.members) {
+        for (memberData in data.members ?? []) {
             var member:Member = new Member(memberData, this, state);
             _add_member(member);
         }
 
-        for (presence in data.presences) {
+        for (presence in data.presences ?? []) {
             var user_id = presence.user.id;
             var member = get_member(user_id);
             if (member != null)
