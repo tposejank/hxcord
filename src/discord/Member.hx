@@ -122,19 +122,19 @@ class Member extends Snowflake implements IMessageable {
     public function get_public_flags() return _user.public_flags;
 
     /**
-     * `Asset`: Returns an `Asset` for the global avatar the usermember has.
+     * `Asset`: Returns an `Asset` for the global avatar the member has.
      * 
      * If the user has not uploaded a global avatar, `null` is returned.
      * 
      * If you want the avatar that a member has displayed, consider `display_avatar`.
      */
-    public var avatar(get, never):Dynamic;
+    public var avatar(get, never):Asset;
     public function get_avatar() return _user.avatar;
 
     /**
      * `Asset`: Returns the default avatar for a given user.
      */
-    public var default_avatar(get, never):Dynamic;
+    public var default_avatar(get, never):Asset;
     public function get_default_avatar() return _user.default_avatar;
 
     /**
@@ -142,7 +142,7 @@ class Member extends Snowflake implements IMessageable {
      * 
      * If the member has not set an avatar decoration, `null` is returned.
      */
-    public var avatar_decoration(get, never):Dynamic;
+    public var avatar_decoration(get, never):Asset;
     public function get_avatar_decoration() return _user.avatar_decoration;
     
     /**
@@ -158,28 +158,28 @@ class Member extends Snowflake implements IMessageable {
      * 
      * This information is only available via `Client.fetch_user`.
      */
-    public var banner(get, never):Dynamic;
+    public var banner(get, never):Asset;
     public function get_banner() return _user.banner;
 
     /**
      * A user's accent color is only shown if they do not have a banner.
      * This will only be available if the user explicitly sets a color.
      */
-    public var accent_colour(get, never):Dynamic;
+    public var accent_colour(get, never):Colour;
     public function get_accent_colour() return _user.accent_colour;
 
     /**
      * A property that returns a colour denoting the rendered colour
      * for the user. This always returns 0xFF000000.
      */
-    public var colour(get, never):Dynamic;
+    public var colour(get, never):Colour;
     public function get_colour() return _user.colour;
 
     /**
      * Returns the user's creation time in UTC.
      * This is when the user's Discord account was created.
      */
-    public var created_at(get, never):Dynamic;
+    public var created_at(get, never):Date;
     public function get_created_at() return _user.created_at;
 
     /**
@@ -201,7 +201,7 @@ class Member extends Snowflake implements IMessageable {
      * if they have a guild specific avatar then that
      * is returned instead.
      */
-    public var display_avatar(get, never):Dynamic; // ASSET
+    public var display_avatar(get, never):Asset; // ASSET
     public function get_display_avatar() {
         return guild_avatar ?? (_user.avatar ?? _user.default_avatar);
     }
