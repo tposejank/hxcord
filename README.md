@@ -63,6 +63,6 @@ Comprehensive documentation and additional examples can be found in the wiki.
 We welcome contributions! Please see our CONTRIBUTING.md for guidelines on how to contribute to this project.
 
 ## License
-This project is licensed under the GNU v3.0 License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the LICENSE for details.
 
 Inspired by the discord.py project. Special thanks to all contributors!
