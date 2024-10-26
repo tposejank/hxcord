@@ -1,15 +1,14 @@
-# discord.hx
+# ![discord.hx](discord_hx.png)
 
 **discord.hx** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py), which is built using Python. The project aims to provide an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing you to make a bot for Discord servers using Haxe.
 
 ## Features
 
-- **Haxe-Based**: Written in Haxe, allowing for cross-compilation and multi-platform support.
-- **Gateway Support**: Establish and maintain WebSocket connections with Discord's Gateway for real-time events like messages, reactions, etc.
-- **API Wrapper**: Simplifies HTTP requests to Discord's REST API for creating and managing servers, users, channels, messages, and more.
+- **Written in Haxe**: Allows for cross-compilation and support in 3 platforms.
+- **Gateway Support**: Creates connections with Discord's Gateway for you which manage real-time events like messages, reactions, etc.
+- **API Wrapper**: Makes requests to Discord's REST API for you for creating and managing servers, users, channels, messages, and more.
 - **Inspired by discord.py**: Takes inspiration from the simplicity and usability of discord.py, bringing the same functionality to the Haxe ecosystem.
-- **Event Handling**: Customizable event listeners for responding to different Discord events.
-- **Rich Documentation**: Code examples and API documentation available to help you get started.
+- **Event-Based**: Customizable event listeners for responding to different Discord events.
 
 ## Installation
 
@@ -52,7 +51,7 @@ class Main {
 ## Requirements
 - Haxe 4.3+
 
-## Supported platforms (not written by gpt)
+## Supported platforms
 - Neko
 - HashLink
 - C++ (`haxelib install hxcpp`)

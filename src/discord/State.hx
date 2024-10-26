@@ -101,13 +101,6 @@ class ConnectionState {
     }
 
     public function parse_message_create(data:Dynamic):Void {
-        trace("Hello");
-
-        var guild = _guilds.get('1');
-        trace(guild.name);
-        var member = guild.get_member("1");
-        trace(member.id);
-        trace(member.name);
-        trace(member.activities);
+        trace("Hello!");
     }
 }

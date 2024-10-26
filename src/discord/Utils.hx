@@ -33,4 +33,13 @@ class Utils {
         var b64 = Base64.encode(data); // Already returns an ASCII-safe string
         return 'data:' + mime + ';base64,' + b64;
     }
+
+    /**
+     * Icons must be power of 2 within [16, 4096].
+     * @param size The size to check
+     * @return Bool Is the size a power of 2 and within [16, 4096]?
+     */
+    public static function valid_icon_size(size:Int):Bool {
+        return (size & (size - 1)) == 0 && size <= 4096 && size >= 16;
+    }
 }

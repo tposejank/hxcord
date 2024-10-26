@@ -89,24 +89,24 @@ class BaseUser extends Snowflake {
      * 
      * If you want the avatar that a user has displayed, consider `display_avatar`.
      */
-    public var avatar(get, never):Dynamic;
+    public var avatar(get, never):Asset;
 
     /**
      * `Asset`: Returns the default avatar for a given user.
      */
-    public var default_avatar(get, never):Dynamic;
+    public var default_avatar(get, never):Asset;
 
     /**
      * `Asset`: Returns the user's display avatar.
      */
-    public var display_avatar(get, never):Dynamic;
+    public var display_avatar(get, never):Asset;
 
     /**
      * `Asset`: Returns the avatar decoration the user has.
      * 
      * If the user has not set an avatar decoration, `null` is returned.
      */
-    public var avatar_decoration(get, never):Dynamic;
+    public var avatar_decoration(get, never):Asset;
 
     /**
      * Returns the SKU ID of the avatar decoration the user has.
@@ -120,7 +120,7 @@ class BaseUser extends Snowflake {
      * 
      * This information is only available via `Client.fetch_user`.
      */
-    public var banner(get, never):Dynamic;
+    public var banner(get, never):Asset;
 
     /**
      * A user's accent color is only shown if they do not have a banner.
@@ -197,23 +197,27 @@ class BaseUser extends Snowflake {
         return null;
     }
 
-    // TBD
-    public function get_avatar():Dynamic {
+    public function get_avatar():Asset {
+        if (_avatar != null)
+            return Asset._from_avatar(this._state, this.id, this._avatar);
         return null;
     }
 
-    // TBD
-    public function get_default_avatar():Dynamic {
-        return null;
+    /**
+     * Unfortunately, Haxe is reigned by the Integer limit!
+     * @return Asset
+     */
+    public function get_default_avatar():Asset {
+        return Asset._from_default_avatar(this._state, 0);
     }
 
-    // TBD
-    public function get_display_avatar():Dynamic {
+    public function get_display_avatar():Asset {
         return avatar ?? default_avatar;
     }
 
-    // TBD
-    public function get_avatar_decoration():Dynamic {
+    public function get_avatar_decoration():Asset {
+        if (this._avatar_decoration_data != null)
+            return Asset._from_avatar_decoration(this._state, this._avatar_decoration_data.asset);
         return null;
     }
 
@@ -221,8 +225,9 @@ class BaseUser extends Snowflake {
         return _avatar_decoration_data?.sku_id ?? null;
     }
 
-    // TBD
-    public function get_banner():Dynamic {
+    public function get_banner():Asset {
+        if (this._banner != null)
+            return Asset._from_user_banner(this._state, this.id, this._banner);
         return null;
     }
 
