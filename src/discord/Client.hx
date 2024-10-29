@@ -41,7 +41,7 @@ class Client extends EventDispatcher {
     public function new(_token:String, intents:Intents) {
         super();
 
-        Log.init(LogLevel.DEBUG);
+        Log.init(LogLevel.TEST);
 
         this.token = _token;
         this.intents = intents;

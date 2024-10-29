@@ -1,5 +1,6 @@
 package discord;
 
+import haxe.Exception;
 import discord.Flags.Intents;
 import discord.utils.events.GatewayEvents;
 import discord.log.Log;
@@ -294,7 +295,10 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 }
                 else // The app is resuming from a Resume event
                 {
+                    Log.info("Trying to resume from previous session");
+                    resume();
                     heartbeat();
+
                     haxe.EntryPoint.runInMainThread(()->{
                         if (hb_timer != null) hb_timer.stop();
                         hb_timer = new haxe.Timer(heartbeatDelay);
@@ -302,31 +306,26 @@ class Gateway extends discord.utils.events.EventDispatcher {
                             heartbeat();
                         }
                     });
-                    
-                    Log.info("Trying to reconnect from previous session");
-                    var payload:Payload = new Payload(RESUME, {
-                        token: this._token,
-                        session_id: this._sessionID,
-                        seq: this._lastSequenceNum
-                    });
-                    send(payload.toString());
                 }
 
             case HEARTBEAT_ACK:
                 lastHeartbeatAckReceived = Sys.time();
 
             case INVALID_SESSION:
-                // Look into this properly
-                // Because we have some cache we can straight up call the identify function, this only happens when trying to resume the previous session so we shouln't have a problem now
-                Log.warn("Re-identifying due to invalid session, probably thrown by the resume handler");
-                identify();
+                // The invalid session is resumable!!
+                if (data.d == true) {
+                    Log.warn("Gateway says invalid session, but specified it may be resumable...");
+                    resume();
+                } else {
+                    Log.warn("Re-identifying due to invalid session");
+                    identify();
+                }
 
             case RECONNECT:
                 Log.info("Gateway wants to reconnect, trying to reconnect");
                 tryReconnection();
 
             case DISPATCH:
-                // apparently i only need to set the seq on this type of opcode
                 _lastSequenceNum = data.s;
 
                 switch (data.t)
@@ -335,6 +334,10 @@ class Gateway extends discord.utils.events.EventDispatcher {
                         _sessionID = data.d.session_id;
                         resumeURL = data.d.resume_gateway_url;
                 }
+            
+            case HEARTBEAT:
+                Log.warn('Discord wants a heartbeat');
+                heartbeat();
 
             default:
                 trace(data);
@@ -361,7 +364,16 @@ class Gateway extends discord.utils.events.EventDispatcher {
             }
         });
 
-        // Can't access https://discord.com/api/v10/applications/ no more even with the auth token, Discord pls fix this
+        send(payload.toString());
+    }
+
+    private function resume()
+    {
+        var payload:Payload = new Payload(RESUME, {
+            token: this._token,
+            session_id: this._sessionID,
+            seq: this._lastSequenceNum
+        });
 
         send(payload.toString());
     }
@@ -373,18 +385,17 @@ class Gateway extends discord.utils.events.EventDispatcher {
     {
         try 
         {
-            // e is still unknown on other targets so we just going to ignore it lol
             if (resumeURL == null)
                 initializeWebsocket();
             else {
-                Log.info('Trying to reconnect on $resumeURL...');
+                Log.debug('Trying to reconnect on $resumeURL...');
                 reconnect();
             }
         }
         catch (ex)
         {
-            Log.error('${ex}, Cannot reconnect');
             shutDown();
+            throw new Exception('${ex}, Cannot reconnect');
         }
     }
 
@@ -394,7 +405,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         initializeWebsocket('${resumeURL}/?v=10&encoding=json');
     }
 
-    // Keep-Alive
+    // Heartbeat, also known as the Keep-Alive
     private function heartbeat()
     {
         var payload:Payload = new Payload(HEARTBEAT, null, _lastSequenceNum);

@@ -156,8 +156,12 @@ class Guild extends Snowflake {
     private var _member_count:Null<Int>;
     private var _state:ConnectionState;
 
+    /**
+     * Indicates if the guild is unavailable. If this is `true` then the
+     * reliability of other attributes outside of `Guild.id` is slim and they might
+     * all be `null`. It is best to not do anything with the guild if it is unavailable.
+     */
     public var unavailable:Null<Bool>;
-
     /**
      * The guild name.
      */
@@ -271,11 +275,11 @@ class Guild extends Snowflake {
         this.id = data.id;
         this._member_count = data.member_count;
         this.name = data.name;
+        this.unavailable = data.unavailable;
         this.verification_level = data.verification_level;
         this.explicit_content_filter = data.explicit_content_filter;
         this.afk_timeout = data.afk_timeout;
         var state:ConnectionState = this._state;
-
         
         // for (role in data.roles) {
         //   var role:Role = new Role(this, role, state);

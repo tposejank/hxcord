@@ -234,7 +234,7 @@ class Intents {
 
     public function new() {}
 
-    public function get_value():Int {
+    function get_value():Int {
         var v:Int = 0;
         if (guilds) v |= Intent.GUILDS;
         if (guildMembers) v |= Intent.GUILD_MEMBERS;
@@ -342,5 +342,35 @@ class Intents {
         intents.guildMembers = false;
         intents.messageContent = false;
         return intents;
+    }
+
+    public function toString():String {
+        return 
+        '
+        Property                    Value
+        Class                       Intents
+        value                       ${value}
+        guilds                      ${guilds}
+        guildMembers                ${guildMembers}
+        guildModeration             ${guildModeration}
+        guildExpressions            ${guildExpressions}
+        guildIntegrations           ${guildIntegrations}
+        guildWebhooks               ${guildWebhooks}
+        guildInvites                ${guildInvites}
+        guildVoiceStates            ${guildVoiceStates}
+        guildPresences              ${guildPresences}
+        guildMessages               ${guildMessages}
+        guildMessageReactions       ${guildMessageReactions}
+        guildMessageTyping          ${guildMessageTyping}
+        directMessages              ${directMessages}
+        directMessageReactions      ${directMessageReactions}
+        directMessageTyping         ${directMessageTyping}
+        messageContent              ${messageContent}
+        guildScheduledEvents        ${guildScheduledEvents}
+        autoModerationConfiguration ${autoModerationConfiguration}
+        autoModerationExecution     ${autoModerationExecution}
+        guildMessagePolls           ${guildMessagePolls}
+        directMessagePolls          ${directMessagePolls}
+        ';
     }
 }
