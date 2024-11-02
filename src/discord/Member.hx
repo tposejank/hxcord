@@ -357,7 +357,7 @@ class Member extends Snowflake implements IMessageable {
         return false;
     }
 
-    public function send(message:String):Dynamic {
+    public function send(message:String):Message {
         return null;
     }
 }

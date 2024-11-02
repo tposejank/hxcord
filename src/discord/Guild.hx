@@ -6,6 +6,7 @@ import discord.Activity.PartialPresenceUpdate;
 import discord.types.Snowflake;
 import discord.Role.RolePayload;
 import discord.State.ConnectionState;
+import discord.Channel;
 
 enum abstract VerificationLevel(Int) from Int to Int {
     var NONE = 0;
@@ -132,7 +133,7 @@ typedef GuildPayload = {
     @:optional var member_count:Int;
     // @:optional var voice_states:NotRequired[List[GuildVoiceState]]
     @:optional var members:Array<MemberPayload>;
-    @:optional var channels:Array<Dynamic>; // GuildChannel
+    @:optional var channels:Array<GuildChannelPayload>; // GuildChannel
     @:optional var presences:Array<PartialPresenceUpdate>;
     // @:optional var threads:NotRequired[List[Thread]]
     @:optional var max_presences:Int;
@@ -146,8 +147,8 @@ typedef GuildPayload = {
 }
 
 class Guild extends Snowflake {
-    private var _channels:Map<String, Dynamic> = new Map<String, Dynamic>(); // GuildChannel
-    private var _members:Map<String, Member> = new Map<String, Member>(); // GuildChannel
+    private var _channels:Map<String, Dynamic> = new Map<String, GuildChannel>();
+    private var _members:Map<String, Member> = new Map<String, Member>();
     private var _roles:Map<String, Dynamic> = new Map<String, Dynamic>(); // Role
     // self._voice_states:Dict[int, VoiceState] = {}
     // self._threads:Dict[int, Thread] = {}
@@ -266,6 +267,16 @@ class Guild extends Snowflake {
      */
     public var chunked(get, never):Null<Bool>;
 
+    public var channels(get, never):Array<GuildChannel>;
+
+    public function get_channels():Array<GuildChannel> {
+        var values:Array<GuildChannel> = [];
+        for (c in _channels.iterator()) {
+            values.push(c);
+        }
+        return values;
+    }
+
     public function new(data:GuildPayload, _state:ConnectionState) {
         this._state = _state;
         this._from_data(data);
@@ -338,6 +349,11 @@ class Guild extends Snowflake {
             if (member != null)
                 member._presence_update(presence, null);
         }
+
+        for (channel in data.channels ?? []) {
+            var channel:BaseChannel;
+            // _add_channel()
+        }
     }
 
     public function get_member(user_id:String):Member {
@@ -354,5 +370,9 @@ class Guild extends Snowflake {
         if (count == null) return false;
 
         return count == Lambda.count(this._members);
+    }
+
+    public function get_channel(channel_id:String) {
+        return this._channels.get(channel_id);
     }
 }

@@ -291,7 +291,7 @@ class User extends BaseUser implements IMessageable {
      * Send a Direct Message to this user.
      * @param message 
      */
-    public function send(message:String):Dynamic { // Message inbound, message outbound
+    public function send(message:String):Message { // Message inbound, message outbound
         return null;
     }
 
@@ -370,7 +370,7 @@ class ClientUser extends User {
         // TBD
     }
 
-    override public function send(message:String):Dynamic {
+    override public function send(message:String):Message {
         throw new NotImplementedException('You cannot message yourself');
     }
 

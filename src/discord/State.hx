@@ -1,6 +1,9 @@
 package discord;
 
 // Events
+import haxe.Json;
+import discord.Http.Route;
+import discord.Http.HTTPClient;
 import discord.utils.events.EventDispatcher.Event;
 import discord.utils.events.GuildEvents;
 import discord.utils.events.GatewayEvents;
@@ -18,9 +21,12 @@ class ConnectionState {
     public var client:Client;
     public var dispatch:Event->Bool;
 
-    public function new(client:Client, dispatch:Event->Bool) {
+    public var http:HTTPClient;
+
+    public function new(client:Client, dispatch:Event->Bool, http:HTTPClient) {
         this.dispatch = dispatch;
         this.client = client;
+        this.http = http;
     }
 
     /**
@@ -52,6 +58,10 @@ class ConnectionState {
                 parse_ready(payload.d);
             case 'GUILD_CREATE':
                 parse_guild_create(payload.d);
+            case 'GUILD_UPDATE':
+                parse_guild_update(payload.d);
+            case 'GUILD_DELETE':
+                parse_guild_delete(payload.d);
             case 'PRESENCE_UPDATE':
                 parse_presence_update(payload.d);
             case 'MESSAGE_CREATE':
@@ -71,6 +81,18 @@ class ConnectionState {
 
     public function _add_guild(guild:Guild):Void {
         _guilds.set(guild.id, guild);
+    }
+
+    public function _remove_guild(guild:Guild) {
+        _guilds.remove(guild.id);
+        
+        // for emoji in guild.emojis:
+        //     self._emojis.pop(emoji.id, None)
+
+        // for sticker in guild.stickers:
+        //     self._stickers.pop(sticker.id, None)
+
+        guild = null;
     }
 
     public function _get_create_guild(data:Dynamic):Guild {
@@ -159,7 +181,52 @@ class ConnectionState {
         }
     }
 
+    public function parse_guild_update(data:Dynamic) {
+        var guild:Guild = this._get_guild(data.id);
+        if (guild != null) {
+            // unfortunately there is no copy module in haxe
+            // so bear with me
+            guild._from_data(data);
+            this.dispatch(new GuildUpdate(guild));
+        } else {
+            Log.error('GUILD_UPDATE is referencing an unknown guild ID ${data.id}. Discarding.');
+        }
+    }
+
+    public function parse_guild_delete(data:Dynamic) {
+        var guild:Guild = this._get_guild(data.id);
+        if (guild == null) {
+            Log.error('GUILD_DELETE is referencing an unknown guild ID ${data.id}. Discarding.');
+            return;
+        }
+
+        if (data.unavailable ?? false) {
+            guild.unavailable = true;
+            this.dispatch(new GuildUnavailable(guild));
+            return;
+        }
+
+        // if self._messages is not None:
+        //     self._messages: Optional[Deque[Message]] = deque(
+        //         (msg for msg in self._messages if msg.guild != guild), maxlen=self.max_messages
+        //     )
+
+        this.dispatch(new GuildRemove(guild));
+        _remove_guild(guild);
+    }
+
     public function parse_message_create(data:Dynamic):Void {
-        trace("Hello!");
+        // channel, _ = self._get_guild_channel(data)
+        // # channel would be the correct type here
+        // message = Message(channel=channel, data=data, state=self)  # type: ignore
+        // self.dispatch('message', message)
+        // if self._messages is not None:
+        //     self._messages.append(message)
+        // # we ensure that the channel is either a TextChannel, VoiceChannel, or Thread
+        // if channel and channel.__class__ in (TextChannel, VoiceChannel, Thread, StageChannel):
+        //     channel.last_message_id = message.id  # type: ignore
+
+        var message = new Message(this, null, data);
+        this.dispatch(new discord.utils.events.MessageEvents.Message(message));
     }
 }

@@ -116,6 +116,8 @@ typedef MessagePayload = {
     @:optional var position:Int;
     @:optional var role_subscription_data:RoleSubscriptionData;
     @:optional var thread:Dynamic; // Thread
+
+    @:optional var guild_id:String; // whys this here
 }
 
 /**
@@ -200,4 +202,50 @@ class PartialMessage extends Snowflake {
     }
 }
 
-class Message extends PartialMessage {}
+class Message extends PartialMessage {
+    public var webhook_id:String;
+
+    public var activity:MessageActivity;
+
+    public var _edited_timestamp:Date;
+
+    public var type:MessageType;
+
+    public var pinned:Null<Bool>;
+
+    //flags
+
+    public var mention_everyone:Null<Bool>;
+	public var tts:Bool;
+	public var content:String;
+	public var nonce:String;
+	public var position:Null<Int>;
+	public var application_id:String;
+
+    public function new(state:ConnectionState, channel:Dynamic, data:MessagePayload) {
+        super(channel, data.id);
+
+        this._state = state;
+        this.webhook_id = data.webhook_id;
+        // reactions
+        // attachments
+        // embeds
+        this.activity = data.activity;
+        this._edited_timestamp = (data.edited_timestamp != null ? Utils.iso8601_to_date(data.edited_timestamp) : null);
+        this.type = data.type;
+        this.pinned = data.pinned;
+        //flags
+        this.mention_everyone = data.mention_everyone;
+        this.tts = data.tts;
+        this.content = data.content;
+        this.nonce = data.nonce;
+        this.position = data.position;
+        this.application_id = data.application_id;
+
+        this.guild = channel?.guild ?? state._get_guild(data.guild_id);
+
+        if (this.guild != null) {
+            //interaction stuff
+        }
+    }
+}

@@ -1,5 +1,6 @@
 package discord;
 
+import discord.Http.HTTPClient;
 import haxe.Exception;
 import discord.log.Log;
 import discord.State.ConnectionState;
@@ -38,6 +39,8 @@ class Client extends EventDispatcher {
 
     public var state:ConnectionState;
 
+    public var http:HTTPClient;
+
     public function new(_token:String, intents:Intents) {
         super();
 
@@ -47,7 +50,8 @@ class Client extends EventDispatcher {
         this.intents = intents;
         ws = new Gateway(this.token, intents);
 
-        this.state = new ConnectionState(this, this.dispatchEvent);
+        this.http = new HTTPClient(this.token);
+        this.state = new ConnectionState(this, this.dispatchEvent, this.http);
 
         ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, onMessage);
         ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, state.on_dispatch, false, 1);

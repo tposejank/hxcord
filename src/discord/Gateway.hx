@@ -129,6 +129,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         if (ws != null) this.dispatchEvent(new GatewayReset());
 
         ws = new WebSocket(url);
+        Log.debug('Connecting to ${url}');
         addListeners();
     }
 
@@ -315,10 +316,14 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 // The invalid session is resumable!!
                 if (data.d == true) {
                     Log.warn("Gateway says invalid session, but specified it may be resumable...");
-                    resume();
+                    // try to resume
+                    tryReconnection();
                 } else {
                     Log.warn("Re-identifying due to invalid session");
-                    identify();
+                    // do NOT try to resume here
+                    resumeURL = null;
+                    // start a new session
+                    initializeWebsocket();
                 }
 
             case RECONNECT:
