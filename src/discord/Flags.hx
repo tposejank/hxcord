@@ -65,7 +65,7 @@ class Intents {
      * 
      * `**` Events under the `GUILD_PRESENCES` and `GUILD_MEMBERS` intents are turned **off by default on all API versions.** If you are using **API v6**, you will receive those events if you are authorized to receive them and have enabled the intents in the Developer Portal. You do not need to use intents on API v6 to receive these events; you just need to enable the flags. If you are using **API v8** or above, intents are mandatory and must be specified when identifying.
      */
-    public var guildMembers:Bool = false;
+    public var guild_members:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -73,7 +73,7 @@ class Intents {
      * - GUILD_BAN_ADD
      * - GUILD_BAN_REMOVE
      */
-    public var guildModeration:Bool = false;
+    public var guild_moderation:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -84,7 +84,7 @@ class Intents {
      * - GUILD_SOUNDBOARD_SOUND_DELETE
      * - GUILD_SOUNDBOARD_SOUNDS_UPDATE
      */
-    public var guildExpressions:Bool = false;
+    public var guild_expressions:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -93,27 +93,27 @@ class Intents {
      * - INTEGRATION_UPDATE
      * - INTEGRATION_DELETE
      */
-    public var guildIntegrations:Bool = false;
+    public var guild_integrations:Bool = false;
 
     /**
      * Corresponds to the following:
      * - WEBHOOKS_UPDATE
      */
-    public var guildWebhooks:Bool = false;
+    public var guild_webhooks:Bool = false;
 
     /**
      * Corresponds to the following:
      * - INVITE_CREATE
      * - INVITE_DELETE
      */
-    public var guildInvites:Bool = false;
+    public var guild_invites:Bool = false;
 
     /**
      * Corresponds to the following:
      * - VOICE_CHANNEL_EFFECT_SEND
      * - VOICE_STATE_UPDATE
      */
-    public var guildVoiceStates:Bool = false;
+    public var guild_voice_states:Bool = false;
 
     /**
      * Corresponds to the following: **
@@ -121,7 +121,7 @@ class Intents {
      * 
      * `**` Events under the `GUILD_PRESENCES` and `GUILD_MEMBERS` intents are turned **off by default on all API versions.** If you are using **API v6**, you will receive those events if you are authorized to receive them and have enabled the intents in the Developer Portal. You do not need to use intents on API v6 to receive these events; you just need to enable the flags. If you are using **API v8** or above, intents are mandatory and must be specified when identifying.
      */
-    public var guildPresences:Bool = false;
+    public var guild_presences:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -130,7 +130,7 @@ class Intents {
      * - MESSAGE_DELETE
      * - MESSAGE_DELETE_BULK
      */
-    public var guildMessages:Bool = false;
+    public var guild_messages:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -139,13 +139,13 @@ class Intents {
      * - MESSAGE_REACTION_REMOVE_ALL
      * - MESSAGE_REACTION_REMOVE_EMOJI
      */
-    public var guildMessageReactions:Bool = false;
+    public var guild_message_reactions:Bool = false;
 
     /**
      * Corresponds to the following:
      * - TYPING_START
      */
-    public var guildMessageTyping:Bool = false;
+    public var guild_message_typing:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -154,7 +154,7 @@ class Intents {
      * - MESSAGE_DELETE
      * - CHANNEL_PINS_UPDATE
      */
-    public var directMessages:Bool = false;
+    public var direct_messages:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -163,20 +163,20 @@ class Intents {
      * - MESSAGE_REACTION_REMOVE_ALL
      * - MESSAGE_REACTION_REMOVE_EMOJI
      */
-    public var directMessageReactions:Bool = false;
+    public var direct_message_reactions:Bool = false;
 
     /**
      * Corresponds to the following:
      * - TYPING_START
      */
-    public var directMessageTyping:Bool = false;
+    public var direct_message_typing:Bool = false;
 
     /**
      * *Directly defined by itelf* ***
      * 
      * `***` `MESSAGE_CONTENT` does not represent individual events, but rather affects what data is present for events that could contain message content fields. More information is in the [message content intent](https://discord.com/developers/docs/topics/gateway#message-content-intent) section.
      */
-    public var messageContent:Bool = false;
+    public var message_content:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -186,7 +186,7 @@ class Intents {
      * - GUILD_SCHEDULED_EVENT_USER_ADD
      * - GUILD_SCHEDULED_EVENT_USER_REMOVE
      */
-    public var guildScheduledEvents:Bool = false;
+    public var guild_scheduled_events:Bool = false;
 
     /**
      * Corresponds to the following:
@@ -194,27 +194,27 @@ class Intents {
      * - AUTO_MODERATION_RULE_UPDATE
      * - AUTO_MODERATION_RULE_DELETE
      */
-    public var autoModerationConfiguration:Bool = false;
+    public var auto_moderation_configuration:Bool = false;
 
     /**
      * Corresponds to the following:
      * - AUTO_MODERATION_ACTION_EXECUTION
      */
-    public var autoModerationExecution:Bool = false;
+    public var auto_moderation_execution:Bool = false;
 
     /**
      * Corresponds to the following:
      * - MESSAGE_POLL_VOTE_ADD
      * - MESSAGE_POLL_VOTE_REMOVE
      */
-    public var guildMessagePolls:Bool = false;
+    public var guild_message_polls:Bool = false;
 
     /**
      * Corresponds to the following:
      * - MESSAGE_POLL_VOTE_ADD
      * - MESSAGE_POLL_VOTE_REMOVE
      */
-    public var directMessagePolls:Bool = false;
+    public var direct_message_polls:Bool = false;
 
     /**
      * The real Discord Intent integer of this `Intents`.
@@ -223,41 +223,46 @@ class Intents {
      * 
      * ```haxe
      * intents = new Intents();
-     * intents.directMessagePolls = true;
+     * intents.direct_message_polls = true;
      * trace(intents.value); // 33554432
      * ```
      * 
      * If you wish to create an `Intents` from a Discord Intent integer,
      * use `Intents.fromValue` instead.
      */
-    public var value(get, never):Int;
+    public var value(get, set):Int;
 
     public function new() {}
 
     function get_value():Int {
         var v:Int = 0;
         if (guilds) v |= Intent.GUILDS;
-        if (guildMembers) v |= Intent.GUILD_MEMBERS;
-        if (guildModeration) v |= Intent.GUILD_MODERATION;
-        if (guildExpressions) v |= Intent.GUILD_EXPRESSIONS;
-        if (guildIntegrations) v |= Intent.GUILD_INTEGRATIONS;
-        if (guildWebhooks) v |= Intent.GUILD_WEBHOOKS;
-        if (guildInvites) v |= Intent.GUILD_INVITES;
-        if (guildVoiceStates) v |= Intent.GUILD_VOICE_STATES;
-        if (guildPresences) v |= Intent.GUILD_PRESENCES;
-        if (guildMessages) v |= Intent.GUILD_MESSAGES;
-        if (guildMessageReactions) v |= Intent.GUILD_MESSAGE_REACTIONS;
-        if (guildMessageTyping) v |= Intent.GUILD_MESSAGE_TYPING;
-        if (directMessages) v |= Intent.DIRECT_MESSAGES;
-        if (directMessageReactions) v |= Intent.DIRECT_MESSAGE_REACTIONS;
-        if (directMessageTyping) v |= Intent.DIRECT_MESSAGE_TYPING;
-        if (messageContent) v |= Intent.MESSAGE_CONTENT;
-        if (guildScheduledEvents) v |= Intent.GUILD_SCHEDULED_EVENTS;
-        if (autoModerationConfiguration) v |= Intent.AUTO_MODERATION_CONFIGURATION;
-        if (autoModerationExecution) v |= Intent.AUTO_MODERATION_EXECUTION;
-        if (guildMessagePolls) v |= Intent.GUILD_MESSAGE_POLLS;
-        if (directMessagePolls) v |= Intent.DIRECT_MESSAGE_POLLS;
+        if (guild_members) v |= Intent.GUILD_MEMBERS;
+        if (guild_moderation) v |= Intent.GUILD_MODERATION;
+        if (guild_expressions) v |= Intent.GUILD_EXPRESSIONS;
+        if (guild_integrations) v |= Intent.GUILD_INTEGRATIONS;
+        if (guild_webhooks) v |= Intent.GUILD_WEBHOOKS;
+        if (guild_invites) v |= Intent.GUILD_INVITES;
+        if (guild_voice_states) v |= Intent.GUILD_VOICE_STATES;
+        if (guild_presences) v |= Intent.GUILD_PRESENCES;
+        if (guild_messages) v |= Intent.GUILD_MESSAGES;
+        if (guild_message_reactions) v |= Intent.GUILD_MESSAGE_REACTIONS;
+        if (guild_message_typing) v |= Intent.GUILD_MESSAGE_TYPING;
+        if (direct_messages) v |= Intent.DIRECT_MESSAGES;
+        if (direct_message_reactions) v |= Intent.DIRECT_MESSAGE_REACTIONS;
+        if (direct_message_typing) v |= Intent.DIRECT_MESSAGE_TYPING;
+        if (message_content) v |= Intent.MESSAGE_CONTENT;
+        if (guild_scheduled_events) v |= Intent.GUILD_SCHEDULED_EVENTS;
+        if (auto_moderation_configuration) v |= Intent.AUTO_MODERATION_CONFIGURATION;
+        if (auto_moderation_execution) v |= Intent.AUTO_MODERATION_EXECUTION;
+        if (guild_message_polls) v |= Intent.GUILD_MESSAGE_POLLS;
+        if (direct_message_polls) v |= Intent.DIRECT_MESSAGE_POLLS;
         return v;
+    }
+
+    public function set_value(new_value:Int):Int {
+        Intents.refresh(this, new_value);
+        return new_value;
     }
 
     /**
@@ -267,28 +272,33 @@ class Intents {
      */
     public static function fromValue(value:Int):Intents {
         var intents:Intents = new Intents();
-        intents.guilds = (value & Intent.GUILDS) != 0;
-        intents.guildMembers = (value & Intent.GUILD_MEMBERS) != 0;
-        intents.guildModeration = (value & Intent.GUILD_MODERATION) != 0;
-        intents.guildExpressions = (value & Intent.GUILD_EXPRESSIONS) != 0;
-        intents.guildIntegrations = (value & Intent.GUILD_INTEGRATIONS) != 0;
-        intents.guildWebhooks = (value & Intent.GUILD_WEBHOOKS) != 0;
-        intents.guildInvites = (value & Intent.GUILD_INVITES) != 0;
-        intents.guildVoiceStates = (value & Intent.GUILD_VOICE_STATES) != 0;
-        intents.guildPresences = (value & Intent.GUILD_PRESENCES) != 0;
-        intents.guildMessages = (value & Intent.GUILD_MESSAGES) != 0;
-        intents.guildMessageReactions = (value & Intent.GUILD_MESSAGE_REACTIONS) != 0;
-        intents.guildMessageTyping = (value & Intent.GUILD_MESSAGE_TYPING) != 0;
-        intents.directMessages = (value & Intent.DIRECT_MESSAGES) != 0;
-        intents.directMessageReactions = (value & Intent.DIRECT_MESSAGE_REACTIONS) != 0;
-        intents.directMessageTyping = (value & Intent.DIRECT_MESSAGE_TYPING) != 0;
-        intents.messageContent = (value & Intent.MESSAGE_CONTENT) != 0;
-        intents.guildScheduledEvents = (value & Intent.GUILD_SCHEDULED_EVENTS) != 0;
-        intents.autoModerationConfiguration = (value & Intent.AUTO_MODERATION_CONFIGURATION) != 0;
-        intents.autoModerationExecution = (value & Intent.AUTO_MODERATION_EXECUTION) != 0;
-        intents.guildMessagePolls = (value & Intent.GUILD_MESSAGE_POLLS) != 0;
-        intents.directMessagePolls = (value & Intent.DIRECT_MESSAGE_POLLS) != 0;
+        Intents.refresh(intents, value);
         return intents;
+    }
+
+    public static function refresh(which:Intents, value:Int) {
+        // dont use which.value, code will not do anything
+        which.guilds = (value & Intent.GUILDS) != 0;
+        which.guild_members = (value & Intent.GUILD_MEMBERS) != 0;
+        which.guild_moderation = (value & Intent.GUILD_MODERATION) != 0;
+        which.guild_expressions = (value & Intent.GUILD_EXPRESSIONS) != 0;
+        which.guild_integrations = (value & Intent.GUILD_INTEGRATIONS) != 0;
+        which.guild_webhooks = (value & Intent.GUILD_WEBHOOKS) != 0;
+        which.guild_invites = (value & Intent.GUILD_INVITES) != 0;
+        which.guild_voice_states = (value & Intent.GUILD_VOICE_STATES) != 0;
+        which.guild_presences = (value & Intent.GUILD_PRESENCES) != 0;
+        which.guild_messages = (value & Intent.GUILD_MESSAGES) != 0;
+        which.guild_message_reactions = (value & Intent.GUILD_MESSAGE_REACTIONS) != 0;
+        which.guild_message_typing = (value & Intent.GUILD_MESSAGE_TYPING) != 0;
+        which.direct_messages = (value & Intent.DIRECT_MESSAGES) != 0;
+        which.direct_message_reactions = (value & Intent.DIRECT_MESSAGE_REACTIONS) != 0;
+        which.direct_message_typing = (value & Intent.DIRECT_MESSAGE_TYPING) != 0;
+        which.message_content = (value & Intent.MESSAGE_CONTENT) != 0;
+        which.guild_scheduled_events = (value & Intent.GUILD_SCHEDULED_EVENTS) != 0;
+        which.auto_moderation_configuration = (value & Intent.AUTO_MODERATION_CONFIGURATION) != 0;
+        which.auto_moderation_execution = (value & Intent.AUTO_MODERATION_EXECUTION) != 0;
+        which.guild_message_polls = (value & Intent.GUILD_MESSAGE_POLLS) != 0;
+        which.direct_message_polls = (value & Intent.DIRECT_MESSAGE_POLLS) != 0;
     }
 
     /**
@@ -298,26 +308,26 @@ class Intents {
     public static function all():Intents {
         var intents:Intents = new Intents();
         intents.guilds = true;
-        intents.guildMembers = true;
-        intents.guildModeration = true;
-        intents.guildExpressions = true;
-        intents.guildIntegrations = true;
-        intents.guildWebhooks = true;
-        intents.guildInvites = true;
-        intents.guildVoiceStates = true;
-        intents.guildPresences = true;
-        intents.guildMessages = true;
-        intents.guildMessageReactions = true;
-        intents.guildMessageTyping = true;
-        intents.directMessages = true;
-        intents.directMessageReactions = true;
-        intents.directMessageTyping = true;
-        intents.messageContent = true;
-        intents.guildScheduledEvents = true;
-        intents.autoModerationConfiguration = true;
-        intents.autoModerationExecution = true;
-        intents.guildMessagePolls = true;
-        intents.directMessagePolls = true;
+        intents.guild_members = true;
+        intents.guild_moderation = true;
+        intents.guild_expressions = true;
+        intents.guild_integrations = true;
+        intents.guild_webhooks = true;
+        intents.guild_invites = true;
+        intents.guild_voice_states = true;
+        intents.guild_presences = true;
+        intents.guild_messages = true;
+        intents.guild_message_reactions = true;
+        intents.guild_message_typing = true;
+        intents.direct_messages = true;
+        intents.direct_message_reactions = true;
+        intents.direct_message_typing = true;
+        intents.message_content = true;
+        intents.guild_scheduled_events = true;
+        intents.auto_moderation_configuration = true;
+        intents.auto_moderation_execution = true;
+        intents.guild_message_polls = true;
+        intents.direct_message_polls = true;
         return intents;
     }
 
@@ -331,46 +341,54 @@ class Intents {
 
     /**
      * A factory method that creates an `Intents` instance with everything enabled except:
-     * - `guildPresences`
-     * - `guildMembers`
-     * - `messageContent`
+     * - `guild_presences`
+     * - `guild_members`
+     * - `message_content`
      * @return Intents
      */
     public static function default_intents():Intents {
-        var intents:Intents = all();
-        intents.guildPresences = false;
-        intents.guildMembers = false;
-        intents.messageContent = false;
+        var intents:Intents = Intents.all();
+        intents.guild_presences = false;
+        intents.guild_members = false;
+        intents.message_content = false;
         return intents;
     }
 
     public function toString():String {
-        return 
-        '
-        Property                    Value
-        Class                       Intents
-        value                       ${value}
-        guilds                      ${guilds}
-        guildMembers                ${guildMembers}
-        guildModeration             ${guildModeration}
-        guildExpressions            ${guildExpressions}
-        guildIntegrations           ${guildIntegrations}
-        guildWebhooks               ${guildWebhooks}
-        guildInvites                ${guildInvites}
-        guildVoiceStates            ${guildVoiceStates}
-        guildPresences              ${guildPresences}
-        guildMessages               ${guildMessages}
-        guildMessageReactions       ${guildMessageReactions}
-        guildMessageTyping          ${guildMessageTyping}
-        directMessages              ${directMessages}
-        directMessageReactions      ${directMessageReactions}
-        directMessageTyping         ${directMessageTyping}
-        messageContent              ${messageContent}
-        guildScheduledEvents        ${guildScheduledEvents}
-        autoModerationConfiguration ${autoModerationConfiguration}
-        autoModerationExecution     ${autoModerationExecution}
-        guildMessagePolls           ${guildMessagePolls}
-        directMessagePolls          ${directMessagePolls}
-        ';
+        var finalStr = '';
+        var classFields = Reflect.fields(this);
+        var varLengths = [];
+        for (f in classFields) varLengths.push(f.length);
+        var maxLength = Lambda.fold(varLengths, Math.max, varLengths[0]);
+        maxLength += 1;
+        finalStr = '\n' + Type.getClassName(Intents) + '\n';
+        for (cf in classFields) {
+            var spaces = Std.int(maxLength - (cf.length + 1));
+            finalStr += cf + ' ';
+            for (s in 0...spaces) finalStr += ' ';
+            finalStr += Reflect.getProperty(this, cf);
+            finalStr += '\n';
+        }
+        finalStr += value;
+        return finalStr;
+    }
+
+    /**
+     * To invert the flags, use this, instead of the `~x` operator.
+     * @param intents The intents to invert.
+     * @return Intents
+     */
+    public static function invert(intents:Intents):Intents {
+        var max_flag = Intent.DIRECT_MESSAGE_POLLS;
+        var max_bits = 0;
+        var compiler_kys:Int = max_flag;
+        var temp = compiler_kys;
+        while (temp > 0) {
+            temp >>= 1;
+            max_bits++;
+        }
+
+        var max_value = Std.int(-1 + Math.pow(2, max_bits));
+        return Intents.fromValue(intents.value ^ max_value);
     }
 }

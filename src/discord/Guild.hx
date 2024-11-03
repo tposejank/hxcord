@@ -291,6 +291,10 @@ class Guild extends Snowflake {
         this.explicit_content_filter = data.explicit_content_filter;
         this.afk_timeout = data.afk_timeout;
         var state:ConnectionState = this._state;
+
+        for (role in data.roles ?? []) {
+            _roles.set(role.id, role);
+        }
         
         // for (role in data.roles) {
         //   var role:Role = new Role(this, role, state);

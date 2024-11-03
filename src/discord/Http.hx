@@ -54,13 +54,14 @@ class HTTPClient {
             request.setPostData(data);
         }
 
-        // handle errors
-        request.onError = (error:String) -> {
-            throw new Exception("HTTPError: " + error);
-        }
-
         // define the output
         var __response = new haxe.io.BytesOutput();
+
+        // handle errors
+        request.onError = (error:String) -> {
+            trace(__response.getBytes().toString());
+            throw new Exception("HTTPError: " + error);
+        }
 
         // send the request
         request.customRequest(false, __response, null, route.method);

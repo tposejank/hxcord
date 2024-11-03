@@ -213,7 +213,7 @@ class Member extends Snowflake implements IMessageable {
      * if they have a guild specific avatar then that
      * is returned instead.
      */
-    public var guild_avatar(get, never):Dynamic; // ASSET
+    public var guild_avatar(get, never):Asset; // ASSET
     public function get_guild_avatar() {
         return null;
         /**
@@ -228,7 +228,7 @@ class Member extends Snowflake implements IMessageable {
     /**
      * The `Guild` this member is in.
      */
-    public var guild:Dynamic; // GUILD
+    public var guild:Guild;
 
     /**
      * `Date` when the `User` joined the `Guild`.
@@ -272,6 +272,8 @@ class Member extends Snowflake implements IMessageable {
     private var _client_status:_ClientStatus;
     private var _permissions:String;
     private var _flags:Int;
+
+    public var guild_permissions(get, never):Permissions;
 
     private var _state:ConnectionState;
 
@@ -352,6 +354,38 @@ class Member extends Snowflake implements IMessageable {
             _user._public_flags = data.public_flags;
             _user._avatar_decoration_data = data.avatar_decoration_data;
             return true;
+        }
+
+        return false;
+    }
+
+    public function get_guild_permissions():Permissions {
+        if (this.guild.owner_id == this.id) {
+            return Permissions.all();
+        }
+
+        var base = Permissions.none();
+
+        for (roleid in this._roles) {
+            @:privateAccess
+            var role = this.guild._roles.get(roleid);
+            var roleperms = Permissions.fromValue(haxe.Int64.parseString(role.permissions));
+            base.value |= roleperms.value;
+        }
+
+        if (base.administrator) {
+            return Permissions.all();
+        }
+
+        if (this.is_timed_out()) base.value &= Permissions._timeout_mask();
+
+        return base;
+    }
+
+    public function is_timed_out():Bool {
+        // i actually dont know if this works
+        if (this.timed_out_until != null) {
+            return Sys.time() < (timed_out_until.getTime() / 1000);
         }
 
         return false;
