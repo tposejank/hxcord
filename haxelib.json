@@ -1,13 +1,12 @@
 {
-    "name": "discord.hx",
-    "url" : "https://github.com/tposejank/discord.hx",
+    "name": "hxcord",
+    "url" : "https://github.com/tposejank/hxcord",
     "license": "MIT",
-    "tags": ["discord", "discordbot", "bot", "wrapper", "discordpy"],
-    "description": "A Discord wrapper similar to discord.py written in Haxe.",
+    "tags": ["Discord", "Discordbot", "Bot", "Wrapper", "discord.py"],
+    "description": "A Discord API and Gateway wrapper, written in Haxe.",
     "version": "0.0.1",
     "classPath": "src/",
-    "releasenote": "Initial release.",
+    "releasenote": "Initial release: Messages, Guilds and more",
     "contributors": ["tposejank"],
-    "dependencies": {
-    }
+    "dependencies": {}
 }

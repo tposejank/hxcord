@@ -1,22 +1,22 @@
-# ![discord.hx](discord_hx.png)
+# ![hxcord](assets/hxcord_full.png)
 
-**discord.hx** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py), which is built using Python. The project aims to provide an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing you to make a bot for Discord servers using Haxe.
+**hxcord** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py). This library gives an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing you to make a Discord bot using Haxe.
 
 ## Features
 
 - **Written in Haxe**: Allows for cross-compilation and support in 3 platforms.
 - **Gateway Support**: Creates connections with Discord's Gateway for you which manage real-time events like messages, reactions, etc.
 - **API Wrapper**: Makes requests to Discord's REST API for you for creating and managing servers, users, channels, messages, and more.
-- **Inspired by discord.py**: Takes inspiration from the simplicity and usability of discord.py, bringing the same functionality to the Haxe ecosystem.
+- **Inspired by discord.py**: Takes inspiration from the simplicity and usability of discord.py, bringing the much of the same functionality to the Haxe ecosystem.
 - **Event-Based**: Customizable event listeners for responding to different Discord events.
 
 ## Installation
 
-To use discord.hx, simply add it as a dependency to your Haxe project by including it in your `haxelib.json` or `build.hxml` file.
+To use hxcord, simply add it as a dependency to your Haxe project by including it in your `haxelib.json` or `build.hxml` file.
 
 Afterwards, you can install the library:
 ```hxml
-haxelib install discord.hx
+haxelib install hxcord
 ```
 
 Then, include the library in your code:

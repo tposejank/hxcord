@@ -1,3 +1,4 @@
 bin/
 Main.hx
 .haxelib
+*.log

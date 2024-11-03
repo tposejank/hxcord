@@ -23,7 +23,7 @@ class LogLevel {
  * This class *originally* is from
  * https://github.com/CobaltBar/FNF-Horizon-Engine/blob/main/source/horizon/util/Log.hx
  * 
- * - Heavily modified for `discord.hx`.
+ * - Heavily modified for `hxcord`.
  * 
  * https://gist.github.com/martinwells/5980517
  * https://gist.github.com/fnky/458719343aabd01cfb17a3a4f7296797

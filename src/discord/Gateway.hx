@@ -344,6 +344,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 Log.warn('Discord wants a heartbeat');
                 heartbeat();
 
+                Log.info('Reinitializing the heartbeat timer');
+                haxe.EntryPoint.runInMainThread(()->{
+                    if (hb_timer != null) hb_timer.stop();
+                    hb_timer = new haxe.Timer(heartbeatDelay);
+                    hb_timer.run = () -> {
+                        heartbeat();
+                    }
+                });
+
             default:
                 trace(data);
                 return;
@@ -363,7 +372,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
             intents: this.intents.value,
             properties: 
             {
-                os: "Bot (discord.hx)",
+                os: "Bot (hxcord)",
                 browser: #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end,
                 device: "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end
             }

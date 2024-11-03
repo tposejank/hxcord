@@ -10,7 +10,7 @@ class Snowflake {
     /**
      * The model's unique ID.
      * 
-     * Warning: discord.hx uses IDs in `String`.
+     * Warning: hxcord uses IDs in `String`.
      * This is because Haxe cannot process Discord Snowflakes,
      * as they reach the Integer limit: 2147483647
      */

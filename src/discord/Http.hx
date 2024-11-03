@@ -58,7 +58,6 @@ class HTTPClient {
         if (this.token != null) headers.set('Authorization', 'Bot ' + this.token);
         if (data != null) {
             headers.set('Content-Type', 'application/json');
-            //set post data
         }
 
         if (reason != null) {
@@ -68,7 +67,7 @@ class HTTPClient {
         var target = #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end ;
         var device = "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end ;
         // rate limiting for later
-        headers.set('User-Agent', 'Bot (discord.hx) ${device} (${target})');
+        headers.set('User-Agent', 'Bot (hxcord) ${device} (${target})');
 
         // set headers
         for (header in headers.keys()) {
@@ -122,7 +121,7 @@ class HTTPClient {
         // TODO retrying requests
         // ratelimiting will be a nightmare
 
-        throw new Exception("Could not handle the response");
+        throw new DiscordServerError("Could not handle the response");
     }
 
     public function delete_message(channel_id:String, message_id:String, reason:String = '') {

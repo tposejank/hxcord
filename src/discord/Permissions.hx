@@ -318,7 +318,7 @@ class Permissions {
      * 
      * ```haxe
      * permissions = new Permissions();
-     * permissions.sendMessages = false;
+     * permissions.send_messages = false;
      * trace(permissions.value); // TBD
      * ```
      * 
@@ -536,14 +536,12 @@ class Permissions {
     }
 
     /**
-     * A factory method that creates a `Permissions` with all permissions set to `true`
+     * A factory method that creates a `Permissions` with all permissions set to `true`.
      */
     public static function all():Permissions {
-        // bug which will be fixed in dpy 2.5
-        //                  \./ THIS bit should be 1
-        //                      or else use_external_apps does not work
-        // 0b0000_0000_0000_0010_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111
-        return fromValue(Int64.parseString("844424930131967"));
+        // bug which is fixed in dpy 2.5
+        // 0b0000_0000_0000_0110_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111
+        return fromValue(Int64.parseString("1829587348619263"));
     }
 
     /**
