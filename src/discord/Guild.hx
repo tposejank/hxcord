@@ -380,3 +380,5 @@ class Guild extends Snowflake {
         return this._channels.get(channel_id);
     }
 }
+
+// todo: permission overwrites

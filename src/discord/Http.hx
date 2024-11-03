@@ -17,6 +17,32 @@ class Route {
     }
 }
 
+class HTTPException extends Exception {
+    public var data:String;
+    public function new(data:String, msg:String = 'HTTPException') {
+        this.data = data;
+        super(msg);
+    }
+}
+
+class Forbidden extends HTTPException {
+    public function new(data:String) {
+        super(data, "Forbidden");
+    }
+}
+
+class NotFound extends HTTPException {
+    public function new(data:String) {
+        super(data, "NotFound");
+    }
+}
+
+class DiscordServerError extends HTTPException {
+    public function new(data:String) {
+        super(data, "DiscordServerError");
+    }
+}
+
 class HTTPClient {
     public var token:String;
 
@@ -56,18 +82,47 @@ class HTTPClient {
 
         // define the output
         var __response = new haxe.io.BytesOutput();
+        var response:haxe.io.Bytes;
+        var responseCode:Int;
+
+        // wait for status code
+        request.onStatus = (code:Int) -> {
+            responseCode = code;
+        }
 
         // handle errors
         request.onError = (error:String) -> {
-            trace(__response.getBytes().toString());
-            throw new Exception("HTTPError: " + error);
+            // response is available at this moment
+            response = __response.getBytes();
+            var response_str = response.toString();
+
+            if (responseCode == 403) {
+                throw new Forbidden(response_str);
+            } else if (responseCode == 404) {
+                throw new NotFound(response_str);
+            } else if (responseCode >= 500) {
+                throw new DiscordServerError(response_str);
+            } else {
+                throw new HTTPException(response_str);
+            }
         }
 
         // send the request
         request.customRequest(false, __response, null, route.method);
+        // the next code will execute when the request is finalized
 
-        var response = __response.getBytes();
-        return response.toString(); // TODO handle ratelimits and json responses
+        // request is finalized
+        response = __response.getBytes();
+
+        // request successful, return the data
+        if ((300 > responseCode) && (responseCode >= 200)) {
+            return response.toString();
+        }
+        // TODO handle ratelimits and json responses
+        // TODO retrying requests
+        // ratelimiting will be a nightmare
+
+        throw new Exception("Could not handle the response");
     }
 
     public function delete_message(channel_id:String, message_id:String, reason:String = '') {

@@ -207,20 +207,13 @@ class Member extends Snowflake implements IMessageable {
     }
 
     /**
-     * Returns the member's display avatar.
-     * 
-     * For regular members this is just their avatar, but
-     * if they have a guild specific avatar then that
-     * is returned instead.
+     * Returns the member's display avatar. If unavailable, `null` is returned.
      */
     public var guild_avatar(get, never):Asset; // ASSET
     public function get_guild_avatar() {
-        return null;
-        /**
-         *  if self._avatar is None:
-                return None
-            return Asset._from_guild_avatar(self._state, self.guild.id, self.id, self._avatar)
-        */
+        if (this._avatar == null)
+            return null;
+        return Asset._from_guild_avatar(this._state, this.guild.id, this.id, this._avatar);
     }
 
     // Member variables
@@ -301,7 +294,8 @@ class Member extends Snowflake implements IMessageable {
         this._avatar = data.avatar; // Member.avatar is not related to User.avatar
         this._avatar_decoration_data = data.avatar_decoration_data;
 
-        this.timed_out_until = null; //Date.fromString(data.communication_disabled_until);
+        if (data.communication_disabled_until != null)
+            this.timed_out_until = Utils.iso8601_to_date(data.communication_disabled_until);
     }
 
     public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Bool {
