@@ -1,5 +1,7 @@
 -cp src
 --main Main
---interp
+--hl bin/script.hl
 -D no-deprecation-warnings
 --define message.reporting pretty
+-D windows
+--cmd hl bin/script.hl

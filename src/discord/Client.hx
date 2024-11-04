@@ -60,9 +60,6 @@ class Client extends EventDispatcher {
     /**
      * Connect to the Gateway and
      * begin operating the Client.
-     * 
-     * This is a blocking call, and nothing will run after this is called,
-     * unless explicitly called by `Client`.
      */
     public function run():Void {
         ws.initializeWebsocket();
@@ -88,7 +85,7 @@ class Client extends EventDispatcher {
             timeoutTimer.run = () -> {
                 timeoutTimer.stop();
                 if (onTriggered != null) removeEventListener(type, onTriggered);
-                throw new Exception("Timed out");
+                throw new Exception("Timed out"); // TBD: Errors class
             }
         }
 

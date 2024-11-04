@@ -30,16 +30,16 @@ Here is a simple example to get you started with a basic bot that responds to me
 
 ```haxe
 import discord.commands.Bot;
-import discord.types.Intents;
+import discord.Flags.Intents;
 import discord.message.Message;
 
 class Main {
     static function main() {
         var bot:Bot = new Bot("YOUR_BOT_TOKEN", Intents.all());
 
-        bot.addEventListener('MESSAGE_CREATE', function(message:Message) { // NOT YET SUPPORTED
-            if (message.content.trim() == '!greet') {
-                message.reply(new Message('Hello!'));
+        bot.addEventListener('message', function(event) {
+            if (event.message.content.trim() == '!greet') {
+                event.message.reply(new Message('Hello!')); // soon
             }
         });
 
@@ -53,8 +53,8 @@ class Main {
 
 ## Supported platforms
 - Neko
-- HashLink
-- C++ (`haxelib install hxcpp`)
+- HashLink (*Recommended*)
+- C++ (Requires `hxcpp`)
 
 ## Documentation
 Comprehensive documentation and additional examples can be found in the wiki.
