@@ -1,4 +1,4 @@
-# ![hxcord](assets/hxcord_full.png)
+# ![hxcord](https://github.com/tposejank/hxcord/blob/755ee15c3eff8907a2bc6a4a1136e53fc3ac8219/assets/hxcord_full.png?raw=true)
 
 **hxcord** is an API and Gateway wrapper for [Discord](https://discord.com/) written in Haxe, inspired by [discord.py](https://github.com/Rapptz/discord.py). This library gives an easy-to-use and efficient way to interact with the Discord API and Gateway, allowing you to make a Discord bot using Haxe.
 
