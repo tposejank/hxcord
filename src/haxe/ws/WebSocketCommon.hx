@@ -142,12 +142,17 @@ class WebSocketCommon {
         }
     }
 
-    public function close() {
+    public function close(dontRecurse:Bool = false) {
         if (state != State.Closed) {
-            var b1 = _payload.readByte();
-            var b2 = _payload.readByte();
-            var code = (b1<<8) + (b2);
-            var message = _payload.readAllAvailableBytes().toString();
+            var code = 1000;
+            var message = "No message specified";
+
+            try {
+                var b1 = _payload.readByte();
+                var b2 = _payload.readByte();
+                code = (b1<<8) + (b2);
+                message = _payload.readAllAvailableBytes().toString();
+            } catch (e) { message = 'Cannot get the close message: ${e.toString()}'; }
 
             try {
                 Log.debug("Closed", id);
@@ -157,7 +162,8 @@ class WebSocketCommon {
             } catch (e:Dynamic) { }
 
             if (onclose != null) {
-                onclose(code, message);
+                // avoid repeating a reconnection like a million times
+                if (!dontRecurse) onclose(code, message);
             }
         }
     }
@@ -277,21 +283,19 @@ class WebSocketCommon {
 
         if (needClose == true) { // dont want to send the Close frame here
             if (state != State.Closed) {
-                // these bytes are 2 header bytes?
-                // L-69, L-70 strips them away?
-                var code = 0;
-                var message = 'Closed unexpectedly';
+                var code = 1000;
+                var message = 'No message received';
                 try {
-                    var spareByte = _buffer.readByte();
-                    var spareByte2 = _buffer.readByte();
+                    // these bytes seem to be 2 header bytes
+                    _buffer.readByte();
+                    _buffer.readByte();
                     // the actual code bytes
                     var b1 = _buffer.readByte();
                     var b2 = _buffer.readByte();
                     code = (b1<<8) + (b2);
                     message = _buffer.readAllAvailableBytes().toString();
                 } catch (e:Dynamic) {
-                    code = 1000;
-                    message = 'Closed because of $e';
+                    message = 'No buffer to retrieve from: $e';
                 }
                 
                 try {

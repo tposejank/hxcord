@@ -86,8 +86,8 @@ class Log
                 fgColor = Black;
             case 'TEST':
                 llToCompare = LogLevel.TEST;
-                bgColor = White;
-                fgColor = Red;
+                bgColor = Blue;
+                fgColor = White;
         }
 
         if (llToCompare > LEVEL) return;

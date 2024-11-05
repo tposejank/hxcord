@@ -62,7 +62,7 @@ class Client extends EventDispatcher {
      * begin operating the Client.
      */
     public function run():Void {
-        ws.initializeWebsocket();
+        ws.initializeWebSocket();
     }
 
     /**

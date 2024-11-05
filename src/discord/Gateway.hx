@@ -73,7 +73,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The sequence number of the events sent & received via the gateway.
      */
-    private var _lastSequenceNum:Int;
+    private var _lastSequenceNum:Null<Int>;
 
     private var _sessionID:String = null;
 
@@ -121,15 +121,24 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * Initialize the `WebSocket`.
      */
-    public function initializeWebsocket(url:String = "wss://gateway.discord.gg/?v=10&encoding=json"):Void {
+    public function initializeWebSocket(url:String = "wss://gateway.discord.gg/?v=10&encoding=json"):Void {
         #if sys
         sys.ssl.Socket.DEFAULT_VERIFY_CERT = false;
         #end
 
-        if (ws != null) this.dispatchEvent(new GatewayReset());
+        if (ws != null) {
+            this.dispatchEvent(new GatewayReset());
+            try { 
+                ws.close(true);
+                ws = null; 
+                Log.debug('Successfully closed WebSocket');
+            } catch (e) {
+                Log.error('[HAXEWS] Could not close the WebSocket: $e');
+            }
+        }
 
-        ws = new WebSocket(url);
-        Log.debug('Connecting to ${url}');
+        Log.debug('Connection starting at ${url}');
+        ws = new WebSocket(url, false);
         addListeners();
     }
 
@@ -137,19 +146,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
      * Shut down the WebSocket.
      */
     public function shutDown():Void {
-        ws.close();
+        ws.close(true);
     }
 
-    function tick()
-    {
-        // trace('tick');
-        // THIS IS SPAMMY
-    }
+    function tick() {}
 
     /**
      * This should be executed everytime the gateway is re-assigned
      */
-    private function addListeners()
+    private function addListeners():Void
     {
         // Listeners for start options
         ws.onopen = () ->
@@ -183,13 +188,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
         {
             if (hb_timer != null) hb_timer.stop();
             initialized = false;
-            Log.error('[WS CLS] Websocket closed with code $code');
-            Log.error('[CL MSG] $message');
-
-            // Force close the client just in case
-            if (ws.state != Closed) {
-                ws.close();
-            }
+            Log.error('[HAXEWS] WebSocket closed with code $code');
+            Log.error('[DISCRD] $message');
 
             handleDisconnectCode(code, message);
         }
@@ -200,34 +200,40 @@ class Gateway extends discord.utils.events.EventDispatcher {
             ticked = true;
         }
         #end
+
+        try {
+            ws.open();
+        } catch (e) {
+            Log.error('Unable to open the WebSocket: $e');
+        }
     }
 
-    public function handleDisconnectCode(code:Int, message:String) {
-        var shouldNotTryToReconnect:Bool = false; // just in case you try catched it...
+    public function handleDisconnectCode(code:Int, message:String):Void {
+        var shouldNotTryToReconnect:Bool = false; // should a reconnection not be attempted?
         switch (code) {
             case 4000:
-                Log.error('[CL VBS] Discord gave us an unknown error.');
+                Log.error('[HXCORD] Discord gave us an unknown error.');
             case 4001:
-                Log.error('[CL VBS] We sent an invalid opcode?');
+                Log.error('[HXCORD] We sent an invalid opcode.');
             case 4002:
-                Log.error('[CL VBS] Discord couldn\'t decode our payload?');
+                Log.error('[HXCORD] Discord couldn\'t decode our payload.');
             case 4003:
                 if (_weSentZeroToDiscord) {
-                    Log.error('[CL VBS] We sent a payload before identifying?');
+                    Log.error('[HXCORD] We sent a payload before identifying.');
                 } else { 
-                    Log.error('[CL VBS] The session has been invalidated.');
+                    Log.error('[HXCORD] The session has been invalidated.');
                 }
             case 4004:
                 throw 'Please provide a valid token.';
                 shouldNotTryToReconnect = true; 
             case 4005:
-                Log.error('[CL VBS] More than one Identify payload sent?');
+                Log.error('[HXCORD] More than one Identify payload sent.');
             case 4007:
-                Log.error('[CL VBS] Mismatch in sequence when resuming?');
+                Log.error('[HXCORD] Mismatch in sequence when resuming.');
             case 4008:
-                Log.error('[CL VBS] Rate limit encountered.');
+                Log.error('[HXCORD] Rate limit encountered.');
             case 4009:
-                Log.error('[CL VBS] The session timed out.');
+                Log.error('[HXCORD] The session timed out.');
             case 4010:
                 throw 'Invalid shard given when Identifying.';
                 shouldNotTryToReconnect = true; 
@@ -241,15 +247,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 throw 'Invalid intents.';
                 shouldNotTryToReconnect = true; 
             case 4014:
-                Log.error('[CL VBS] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
-                Log.error('[CL VBS] If it is not in +100 guilds, please enable it in the Developer Portal:');
-                Log.error('[CL VBS] https://discord.com/developers/docs/topics/gateway#privileged-intents');
+                Log.error('[HXCORD] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
+                Log.error('[HXCORD] If it is not in +100 guilds, please enable it in the Developer Portal:');
+                Log.error('[HXCORD] https://discord.com/developers/docs/topics/gateway#privileged-intents');
                 throw 'Privileged intents ${intents.value} provided, these intents are disallowed.';
                 shouldNotTryToReconnect = true; 
         }
 
         if (!shouldNotTryToReconnect) {
-            Log.info('[CL VBS] Reconnect in progress...');
+            Log.info('Reconnection started and in progress');
             tryReconnection();
         }
     }
@@ -275,7 +281,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
             t: json.t
         };
 
-        Log.debug('Received ${data.op} (${data.t ?? 'Unknown Event Type'})');
+        Log.debug('Received ${data.op} ${data.t ?? ''}');
         Log.test(msg);
 
         switch(data.op)
@@ -310,24 +316,25 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 }
 
             case HEARTBEAT_ACK:
+                // measure latency
                 lastHeartbeatAckReceived = Sys.time();
 
             case INVALID_SESSION:
                 // The invalid session is resumable!!
                 if (data.d == true) {
-                    Log.warn("Gateway says invalid session, but specified it may be resumable...");
                     // try to resume
-                    tryReconnection();
+                    Log.warn("Invalid session received but could be resumed.");
                 } else {
                     Log.warn("Re-identifying due to invalid session");
                     // do NOT try to resume here
                     resumeURL = null;
                     // start a new session
-                    initializeWebsocket();
+                    _lastSequenceNum = null;
                 }
+                tryReconnection();
 
             case RECONNECT:
-                Log.info("Gateway wants to reconnect, trying to reconnect");
+                Log.info("Reconnect requested.");
                 tryReconnection();
 
             case DISPATCH:
@@ -344,7 +351,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 Log.warn('Discord wants a heartbeat');
                 heartbeat();
 
-                Log.info('Reinitializing the heartbeat timer');
+                Log.debug('Reinitializing the heartbeat timer to be safe');
                 haxe.EntryPoint.runInMainThread(()->{
                     if (hb_timer != null) hb_timer.stop();
                     hb_timer = new haxe.Timer(heartbeatDelay);
@@ -365,7 +372,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
      * Logs into the Gateway
      * Provided you have the token, you're good to go.
      */
-    private function identify()
+    private function identify():Void
     {
         var payload:Payload = new Payload(IDENTIFY, {
             token: this._token, // token
@@ -381,7 +388,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         send(payload.toString());
     }
 
-    private function resume()
+    private function resume():Void
     {
         var payload:Payload = new Payload(RESUME, {
             token: this._token,
@@ -397,14 +404,15 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     private function tryReconnection()
     {
+        Log.debug('Waiting 0.5s to handle the reconnection');
+        Sys.sleep(0.5); // reduce spam
+
         try 
         {
             if (resumeURL == null)
-                initializeWebsocket();
-            else {
-                Log.debug('Trying to reconnect on $resumeURL...');
+                initializeWebSocket();
+            else 
                 reconnect();
-            }
         }
         catch (ex)
         {
@@ -414,9 +422,9 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     // Reconnect / Resume the connection to the gateway in case we get disconnected from it
-    private function reconnect()
+    private function reconnect():Void
     {
-        initializeWebsocket('${resumeURL}/?v=10&encoding=json');
+        initializeWebSocket('${resumeURL}/?v=10&encoding=json');
     }
 
     // Heartbeat, also known as the Keep-Alive
@@ -425,7 +433,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         var payload:Payload = new Payload(HEARTBEAT, null, _lastSequenceNum);
         if (ws.state == Closed)
         {
-            Log.error('Failed to HeartBeat: Gateway is closed!');
+            Log.error('Cannot send a heartbeat when the Gateway is closed!');
             return;
         }
 
