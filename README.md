@@ -55,6 +55,10 @@ class Main {
 - Neko
 - HashLink (*Recommended*)
 - C++ (Requires `hxcpp`)
+    
+    Including, but not limited to:
+    - Windows (Lime)
+    - Android (Lime)
 
 ## Documentation
 Comprehensive documentation and additional examples can be found in the wiki.

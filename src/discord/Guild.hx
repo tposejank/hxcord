@@ -147,9 +147,9 @@ typedef GuildPayload = {
 }
 
 class Guild extends Snowflake {
-    private var _channels:Map<String, Dynamic> = new Map<String, GuildChannel>();
-    private var _members:Map<String, Member> = new Map<String, Member>();
-    private var _roles:Map<String, Dynamic> = new Map<String, Dynamic>(); // Role
+    private var _channels:Map<String, GuildChannel> = new Map<String, GuildChannel>();
+    public var _members:Map<String, Member> = new Map<String, Member>();
+    private var _roles:Map<String, Role> = new Map<String, Role>(); // Role
     // self._voice_states:Dict[int, VoiceState] = {}
     // self._threads:Dict[int, Thread] = {}
     // self._stage_instances:Dict[int, StageInstance] = {}
@@ -252,30 +252,21 @@ class Guild extends Snowflake {
     private var _large:Null<Bool>;
     private var _afk_channel_id:String;
     private var _incidents_data:Null<IncidentData>;
-    public var approximate_presence_count:Null<Int>;
-    public var approximate_member_count:Null<Int>;
-    public var premium_progress_bar_enabled:Null<Bool>;
-
     /**
-     * Returns a boolean indicating if the guild is "chunked".
-     * 
-     * A chunked guild means that :attr:`member_count` is equal to the
-     * number of members stored in the internal :attr:`members` cache.
-     * 
-     * If this value returns `false`, then you should request for
-     * offline members.
+     * The approximate number of members currently active in the guild. Offline members are excluded.
+     * This is `null` unless the guild is obtained using `Client.fetch_guild` or 
+     * `Client.fetch_guilds` with `with_counts` set to `true`.
      */
-    public var chunked(get, never):Null<Bool>;
-
-    public var channels(get, never):Array<GuildChannel>;
-
-    public function get_channels():Array<GuildChannel> {
-        var values:Array<GuildChannel> = [];
-        for (c in _channels.iterator()) {
-            values.push(c);
-        }
-        return values;
-    }
+    public var approximate_presence_count:Null<Int>;
+    /**
+     * The approximate number of members in the guild. This is `null` unless the guild is obtained
+     * using `Client.fetch_guild` or `Client.fetch_guilds` with `with_counts` set to `true`.
+     */
+    public var approximate_member_count:Null<Int>;
+    /**
+     * Indicates if the guild has premium AKA server boost level progress bar enabled.
+     */
+    public var premium_progress_bar_enabled:Null<Bool>;
 
     public function new(data:GuildPayload, _state:ConnectionState) {
         this._state = _state;
@@ -291,15 +282,11 @@ class Guild extends Snowflake {
         this.explicit_content_filter = data.explicit_content_filter;
         this.afk_timeout = data.afk_timeout;
         var state:ConnectionState = this._state;
-
-        for (role in data.roles ?? []) {
-            _roles.set(role.id, role);
-        }
         
-        // for (role in data.roles) {
-        //   var role:Role = new Role(this, role, state);
-        //   this._roles.set(role.id, role);
-        // }
+        for (role in data.roles ?? []) {
+            var role:Role = new Role(this, state, role);
+            this._roles.set(role.id, role);
+        }
 
         /**
          *  self.emojis: Tuple[Emoji, ...] = (
@@ -330,7 +317,7 @@ class Guild extends Snowflake {
         this._discovery_splash = data.discovery_splash;
         this._rules_channel_id = data.rules_channel_id;
         this._public_updates_channel_id = data.public_updates_channel_id;
-        // this._safety_alerts_channel_id = data.safety
+        // this._safety_alerts_channel_id = data.safety_alerts_;
         this.nsfw_level = data.nsfw_level;
         this.mfa_level = data.mfa_level;
         this.approximate_presence_count = data.approximate_presence_count;
@@ -354,12 +341,16 @@ class Guild extends Snowflake {
                 member._presence_update(presence, null);
         }
 
-        for (channel in data.channels ?? []) {
-            var channel:BaseChannel;
-            // _add_channel()
-        }
+        // for (channel in data.channels ?? []) {
+        //     var channel:BaseChannel;
+        //     // _add_channel()
+        // }
     }
 
+    /**
+     * Returns a member with the given ID.
+     * @param user_id The ID to search for.
+     */
     public function get_member(user_id:String):Member {
         return this._members.get(user_id);
     }
@@ -368,16 +359,67 @@ class Guild extends Snowflake {
         this._members.set(member.id, member);
     }
 
+    /**
+     * Returns a channel with the given ID.
+     * @param channel_id The ID to search for.
+     */
+    public function get_channel(channel_id:String) {
+        return this._channels.get(channel_id);
+    }
+
+    /**
+     * Returns a role with the given ID.
+     * @param role_id The ID to search for.
+     */
+    public function get_role(role_id:String):Role {
+        return this._roles.get(role_id);
+    }
+
+    /**
+     * A list of channels that belongs to this guild.
+     */
+    public var channels(get, never):Array<GuildChannel>;
+    function get_channels():Array<GuildChannel> {
+        var values:Array<GuildChannel> = [];
+        for (c in _channels.iterator()) {
+            values.push(c);
+        }
+        return values;
+    }
+ 
+    /**
+     * Similar to `Client.user` except an instance of `Member`.
+     * This is essentially used to get the member version of yourself.
+     */
+    public var me(get, never):Member;
+    function get_me():Member {
+        return this.get_member(this._state.user.id);
+    }
+
+    /**
+     * Gets the @everyone role that all members have by default.
+     */
+    public var default_role(get, never):Role;
+    function get_default_role():Role  {
+        return this._roles.get(this.id);
+    }
+
+    /**
+     * Returns a boolean indicating if the guild is "chunked".
+     * 
+     * A chunked guild means that `member_count` is equal to the
+     * number of members stored in the internal `members` cache.
+     * 
+     * If this value returns `false`, then you should request for
+     * offline members.
+     */
+    public var chunked(get, never):Null<Bool>;
     // chunking is not a priority right now
     function get_chunked():Bool {
         var count = this._member_count;
         if (count == null) return false;
 
         return count == Lambda.count(this._members);
-    }
-
-    public function get_channel(channel_id:String) {
-        return this._channels.get(channel_id);
     }
 }
 

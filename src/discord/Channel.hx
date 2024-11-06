@@ -1,5 +1,6 @@
 package discord;
 
+import discord.types.OneOfTwo;
 import haxe.ValueException;
 import haxe.exceptions.NotImplementedException;
 import discord.State.ConnectionState;
@@ -108,7 +109,7 @@ typedef GuildChannelPayload = {
     >MediaChannel,
 }
 
-class GuildChannel extends Snowflake implements IMessageable {
+class GuildChannel extends Snowflake implements IMessageable { // abc
     /**
      * The channel name.
      */
@@ -210,7 +211,40 @@ class GuildChannel extends Snowflake implements IMessageable {
     public var created_at(get, never):Date;
     public function get_created_at():Date return Utils.snowflake_time(this.id);
 
-    // public var category CATEGORYCHANNEL
+    /**
+     * The category this channel belongs to.
+     * 
+     * If there is no category then this is `null`.
+     */
+    public var category(get, never):GuildChannel; // categorychannel
+    public function get_category() {
+        return guild.get_channel(category_id);
+    }
+
+    function _apply_implicit_permissions(base:Permissions) {
+        if (!base.send_messages) {
+            base.send_tts_messages = false;
+            base.mention_everyone = false;
+            base.embed_links = false;
+            base.attach_files = false;
+        }
+
+        if (!base.view_channel) {
+            var denied = Permissions.all_channel();
+            base.value &= ~denied.value;
+        }
+    }
+
+    public function permissions_for(obj:Dynamic):Permissions {
+        if (guild.owner_id == obj.id) {
+            return Permissions.all();
+        }
+        
+        // bro wheres unions
+        // var default_role 
+
+        return null;
+    }
 
     /**
      * Deletes the channel.

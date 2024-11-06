@@ -20,8 +20,8 @@ class Route {
 class HTTPException extends Exception {
     public var data:String;
     public function new(data:String, msg:String = 'HTTPException') {
-        this.data = data;
         super(msg);
+        this.data = data;
     }
 }
 

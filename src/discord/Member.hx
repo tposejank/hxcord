@@ -32,7 +32,7 @@ typedef MemberPayload = {
     @:optional var avatar_decoration_data:AvatarDecorationData;
 }
 
-private typedef _OptionalMemberWithUserPayload = {
+typedef _OptionalMemberWithUserPayload = {
     >PartialMemberPayload,
     var avatar:String;
     var nick:String;
@@ -138,9 +138,9 @@ class Member extends Snowflake implements IMessageable {
     public function get_default_avatar() return _user.default_avatar;
 
     /**
-     * `Asset`: Returns the avatar decoration the member has.
+     * `Asset`: Returns the avatar decoration the user has.
      * 
-     * If the member has not set an avatar decoration, `null` is returned.
+     * If the user has not set an avatar decoration, `null` is returned.
      */
     public var avatar_decoration(get, never):Asset;
     public function get_avatar_decoration() return _user.avatar_decoration;
@@ -216,6 +216,33 @@ class Member extends Snowflake implements IMessageable {
         return Asset._from_guild_avatar(this._state, this.guild.id, this.id, this._avatar);
     }
 
+    /**
+     * TBD: Figure out if dpy has plans of adding guild avatar decorations
+     */
+    public var _avatar_decoration_data:AvatarDecorationData;
+
+    /**
+     * `Asset`: Returns the guild avatar decoration the member has.
+     * 
+     * If the user has not set a guild avatar decoration, `null` is returned.
+     */
+    public var guild_avatar_decoration(get, never):Asset;
+    public function get_guild_avatar_decoration() return {
+        if (this._avatar_decoration_data != null)
+            return Asset._from_avatar_decoration(this._state, this._avatar_decoration_data.asset);
+        return null;
+    }
+     
+    /**
+     * Returns the SKU ID of the guild avatar decoration the member has.
+     * 
+     * If the user has not set a guild avatar decoration, `null` is returned.
+     */
+    public var guild_avatar_decoration_sku_id(get, never):String;
+    public function get_guild_avatar_decoration_sku_id() return {
+        return _avatar_decoration_data?.sku_id ?? null;
+    }
+
     // Member variables
 
     /**
@@ -255,13 +282,8 @@ class Member extends Snowflake implements IMessageable {
      */
     public var timed_out_until:Date;
 
-    private var _avatar:String;
-
-    public var _avatar_decoration_data(get, set):AvatarDecorationData;
-    public function get__avatar_decoration_data() return _user._avatar_decoration_data;
-    public function set__avatar_decoration_data(n) return _user._avatar_decoration_data = n;
-    
-    private var _roles:Array<String> = [];
+    public var _avatar:String;
+    public var _roles:Array<String> = [];
     private var _client_status:_ClientStatus;
     private var _permissions:String;
     private var _flags:Int;
@@ -269,6 +291,8 @@ class Member extends Snowflake implements IMessageable {
     public var guild_permissions(get, never):Permissions;
 
     private var _state:ConnectionState;
+
+    public var roles(get, never):Array<Role>;
 
     public function new(data:MemberWithUserPayload, guild:Guild, _state:ConnectionState) {
         this._state = _state;
@@ -283,7 +307,7 @@ class Member extends Snowflake implements IMessageable {
             this.premium_since = Utils.iso8601_to_date(data.premium_since);
 
         this._roles = data.roles;
-        this._client_status = null;
+        this._client_status = new _ClientStatus();
 
         this.nick = data.nick;
         this.pending = data.pending;
@@ -291,46 +315,46 @@ class Member extends Snowflake implements IMessageable {
         this._permissions = data.permissions;
         this._flags = data.flags;
 
-        this._avatar = data.avatar; // Member.avatar is not related to User.avatar
+        // these are guild-only
+        this._avatar = data.avatar;
         this._avatar_decoration_data = data.avatar_decoration_data;
 
         if (data.communication_disabled_until != null)
             this.timed_out_until = Utils.iso8601_to_date(data.communication_disabled_until);
     }
 
-    public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Bool {
+    public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Array<User> {
         this.activities = []; //activity.py
         for (activity in data.activities) {
             this.activities.push(activity);
         }
+        this._client_status._update(data.status, data.client_status);
 
-        // Technically, user is already available in data.user
-        // But discord.py does this!
         if (user != null)
             return _update_inner_user(user);
 
-        return false;
+        return null;
     }
 
-    public function _update_inner_user(data:UserPayload):Bool {
-        var u = this._user;
+    public function _update_inner_user(data:UserPayload):Array<User> {
         var original:Array<Dynamic> = [
-            u.name, 
-            u.discriminator, 
-            u._avatar, 
-            u.global_name, 
-            u._public_flags, 
-            u._avatar_decoration_data?.sku_id
+            this._user.name, 
+            this._user.discriminator, 
+            this._user._avatar, 
+            this._user.global_name, 
+            this._user._public_flags, 
+            this._user._avatar_decoration_data?.sku_id
         ];
         var modified:Array<Dynamic> = [
-            data.username ?? u.name,
-            data.discriminator ?? u.discriminator, 
-            data.avatar ?? u._avatar, 
-            data.global_name ?? u.global_name, 
-            data.public_flags ?? u._public_flags, 
-            (data.avatar_decoration_data?.sku_id) ?? (u._avatar_decoration_data?.sku_id)
+            data.username ?? this._user.name,
+            data.discriminator ?? this._user.discriminator, 
+            data.avatar ?? this._user._avatar, 
+            data.global_name ?? this._user.global_name, 
+            data.public_flags ?? this._user._public_flags, 
+            (data.avatar_decoration_data?.sku_id) ?? (this._user._avatar_decoration_data?.sku_id)
         ];
 
+        // Array comparing is kinda fd up
         var notDiff = 
            original[0] == modified[0] 
         && original[1] == modified[1]
@@ -339,32 +363,44 @@ class Member extends Snowflake implements IMessageable {
         && original[4] == modified[4]
         && original[5] == modified[5];
 
-        // Array comparing is kinda fd up
         if (!notDiff) {
+            var to_return = User._copy(this._user);
             _user.name = data.username;
             _user.discriminator = data.discriminator;
             _user._avatar = data.avatar;
             _user.global_name = data.global_name;
-            _user._public_flags = data.public_flags;
+            _user._public_flags = data.public_flags; // TBD: check if its null, coalesce to 0
             _user._avatar_decoration_data = data.avatar_decoration_data;
-            return true;
+            return [to_return, this._user];
         }
 
-        return false;
+        return null;
     }
 
-    public function get_guild_permissions():Permissions {
+    function get_roles():Array<Roles> {
+        var result = [];
+        for (rid in this._roles) {
+            var role = this.guild.get_role(rid);
+            if (role != null) result.push(role);
+        }
+
+        result.push(this.guild.default_role);
+        result.sort((a:Role, b:Role) -> {
+            return a.position - b.position;
+        });
+
+        return result;
+    }
+
+    function get_guild_permissions():Permissions {
         if (this.guild.owner_id == this.id) {
             return Permissions.all();
         }
 
         var base = Permissions.none();
 
-        for (roleid in this._roles) {
-            @:privateAccess
-            var role = this.guild._roles.get(roleid);
-            var roleperms = Permissions.fromValue(haxe.Int64.parseString(role.permissions));
-            base.value |= roleperms.value;
+        for (role in this.roles) {
+            base.value |= role.permissions.value;
         }
 
         if (base.administrator) {

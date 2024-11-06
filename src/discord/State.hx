@@ -7,6 +7,7 @@ import discord.Http.HTTPClient;
 import discord.utils.events.EventDispatcher.Event;
 import discord.utils.events.GuildEvents;
 import discord.utils.events.GatewayEvents;
+import discord.utils.events.UserEvents;
 
 import discord.Guild.GuildPayload;
 import discord.log.Log;
@@ -157,12 +158,15 @@ class ConnectionState {
         var member_id = user.id;
         var member:Member = guild.get_member(member_id);
         if (member == null) {
-            Log.error('PRESENCE_UPDATE is referencing an unknown member ID $member_id in guild $guild_id, discarding.');
+            // Log.error('PRESENCE_UPDATE is referencing an unknown member ID $member_id in guild $guild_id, discarding.');
             return;
         }
 
-        if (member._presence_update(data, data.user)) {
-            //dispatch('user_update')
+        // TBD: Missing member._copy
+
+        var user_update:Array<User> = member._presence_update(data, data.user);
+        if (user_update != null) {
+            dispatch(new UserUpdate(user_update[0], user_update[1]));
         }
         //dispatch('presence_update')
     }

@@ -14,6 +14,7 @@ import discord.Member;
 typedef AvatarDecorationData = {
     var asset:String;
     var sku_id:String;
+    @:optional var expires_at:Int;
 }
 
 typedef PartialUserPayload = {
@@ -63,12 +64,12 @@ class BaseUser extends Snowflake {
      */
     public var system:Null<Bool>;
     public var _avatar:String;
-    private var _banner:String;
-    private var _accent_colour:Null<Int>;
+    public var _banner:String;
+    public var _accent_colour:Null<Int>;
     public var _public_flags:Null<Int>;
-    public var _avatar_decoration_data:AvatarDecorationData; //TBD
+    public var _avatar_decoration_data:AvatarDecorationData;
 
-    private var _state:ConnectionState;
+    public var _state:ConnectionState;
 
     /**
      * Returns the user's display name.
@@ -152,18 +153,15 @@ class BaseUser extends Snowflake {
         this._update(_payload);
     }
 
-    private function _update(_payload:UserPayload):Void {
-        // PartialUserPayload
+    function _update(_payload:UserPayload):Void {
         this.name = _payload.username;
         this.id = _payload.id;
         this.discriminator = _payload.discriminator;
         this.global_name = _payload.global_name;
         this._avatar = _payload.avatar;
         this._avatar_decoration_data = _payload.avatar_decoration_data ?? null;
-        // UserPayload
         this._banner = _payload.banner ?? null;
         this._accent_colour = _payload.accent_color ?? null;
-        // _payload
         this._public_flags = _payload.public_flags ?? 0;
         this.bot = _payload.bot ?? false;
         this.system = _payload.system ?? false;
@@ -320,6 +318,22 @@ class User extends BaseUser implements IMessageable {
         var state = _state;
         var data:Dynamic = null; // state.http.start_private_message(this.id); //DMChannelPayload
         return null; // state.add_dm_channel(data)
+    }
+
+    public static function _copy(user:User):User {
+        var new_user:User = Type.createEmptyInstance(User);
+        new_user.name = user.name;
+        new_user.id = user.id;
+        new_user.discriminator = user.discriminator;
+        new_user.global_name = user.global_name;
+        new_user._avatar = user._avatar;
+        new_user._banner = user._banner;
+        new_user._accent_colour = user._accent_colour;
+        new_user.bot = user.bot;
+        new_user._state = user._state;
+        new_user._public_flags = user._public_flags;
+        new_user._avatar_decoration_data = user._avatar_decoration_data;
+        return new_user;
     }
 }
 

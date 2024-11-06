@@ -1,4 +1,4 @@
-package hx.ws;
+package haxe.ws;
 
 class Handler extends WebSocketCommon {
     public function new(socket:SocketImpl) {

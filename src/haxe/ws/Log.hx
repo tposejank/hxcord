@@ -5,9 +5,7 @@ class Log {
     public static inline var DEBUG:Int = 0x000010;
     public static inline var DATA:Int =  0x000100;
 
-    public static var dontDebug:Bool = #if !WSDEBUG true; #else false; #end
-
-    public static var mask:Int = 0;
+    public static var mask:Int = #if WSDEBUG INFO | DEBUG | DATA #else 0 #end;
 
     #if sys
     public static var logFn:Dynamic->Void = Sys.println;
@@ -16,7 +14,9 @@ class Log {
     #end
     
     public static function info(data:String, id:String = null) {
-        if (dontDebug) return;
+        if (mask & INFO != INFO) {
+            return;
+        }
 
         if (id != null) {
             logFn('INFO  :: ID-${id} :: ${data}');
@@ -26,7 +26,9 @@ class Log {
     }
 
     public static function debug(data:String, id:String = null) {
-        if (dontDebug) return;
+        if (mask & DEBUG != DEBUG) {
+            return;
+        }
 
         if (id != null) {
             logFn('DEBUG :: ID-${id} :: ${data}');
@@ -36,7 +38,9 @@ class Log {
     }
 
     public static function data(data:String, id:String = null) {
-        if (dontDebug) return;
+        if (mask & DATA != DATA) {
+            return;
+        }
 
         if (id != null) {
             logFn('DATA  :: ID-${id}\n------------------------------\n${data}\n------------------------------');
