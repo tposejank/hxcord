@@ -7,6 +7,9 @@ import haxe.display.Display.Package;
 import discord.types.Snowflake;
 import discord.State.ConnectionState;
 
+using discord.utils.MapUtils;
+using discord.utils.StringUtils;
+
 typedef RolePayload = {
 	var id:String;
 	var name:String;
@@ -203,7 +206,7 @@ class Role extends Snowflake {
 		}
 
 		if (which.position == other.position) {
-			return Int64.parseString(which.id) > Int64.parseString(other.id);
+			return which.id.i64() > other.id.i64();
 		}
 
 		return false;
@@ -303,10 +306,7 @@ class Role extends Snowflake {
 	}
 
 	function get_members():Array<Member> {
-		var all_members:Array<Member> = [];
-        for (value in this.guild._members.iterator()) {
-            all_members.push(value);
-        }
+		var all_members:Array<Member> = this.guild.members;
 
 		if (this.is_default()) return all_members;
 

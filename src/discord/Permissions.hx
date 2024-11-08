@@ -2,6 +2,8 @@ package discord;
 
 import haxe.Int64;
 
+using discord.utils.StringUtils;
+
 class Permission {
     public static var CREATE_INSTANT_INVITE = pshl(1, 0);
     public static var KICK_MEMBERS = pshl(1, 1);
@@ -57,7 +59,7 @@ class Permission {
      * Get a `haxe.Int64` of a shifted b bits to the left.
      */
     public static function pshl(a:Int, b:Int) {
-        return Int64.parseString(Std.string(a)) << b;
+        return Std.string(a).i64() << b;
     }
 }
 
@@ -322,7 +324,7 @@ class Permissions {
      * trace(permissions.value); // TBD
      * ```
      * 
-     * If you wish to create a `Permissions` from a Discord Intent integer,
+     * If you wish to create a `Permissions` from a Discord Permission integer,
      * use `Permissions.fromValue` instead.
      * 
      * This value is a bit array field of a 53-bit integer (`Int64`) representing the currently available permissions. You should query permissions via the properties rather than using this raw value.
@@ -541,7 +543,7 @@ class Permissions {
     public static function all():Permissions {
         // bug which is fixed in dpy 2.5
         // 0b0000_0000_0000_0110_0111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111_1111
-        return fromValue(Int64.parseString("1829587348619263"));
+        return fromValue("1829587348619263".i64());
     }
 
     /**
@@ -549,7 +551,7 @@ class Permissions {
      */
     public static function all_channel():Permissions {
         // 0b0000_0000_0000_0110_0110_0100_1111_1101_1011_0011_1111_0111_1111_1111_0101_0001
-        return fromValue(Int64.parseString("1799890669141841"));
+        return fromValue("1799890669141841".i64());
     }
 
     /**
@@ -557,7 +559,7 @@ class Permissions {
      */
     public static function general():Permissions {
         // 0b0000_0000_0000_0000_0000_1010_0000_0000_0111_0000_0000_1000_0000_0100_1011_0000
-        return fromValue(Int64.parseString("10996995851440"));
+        return fromValue("10996995851440".i64());
     }
 
     /**
@@ -565,7 +567,7 @@ class Permissions {
      */
     public static function membership():Permissions {
         // 0b0000_0000_0000_0000_0000_0001_0000_0000_0000_1100_0000_0000_0000_0000_0000_0111
-        return fromValue(Int64.parseString("1099712954375"));
+        return fromValue("1099712954375".i64());
     }
     
     /**
@@ -573,7 +575,7 @@ class Permissions {
      */
     public static function text():Permissions {
         // 0b0000_0000_0000_0110_0100_0000_0111_1100_1000_0000_0000_0111_1111_1000_0100_0000
-        return fromValue(Int64.parseString("1759753328392256"));
+        return fromValue("1759753328392256".i64());
     }
 
     /**
@@ -581,7 +583,7 @@ class Permissions {
      */
     public static function voice():Permissions {
         // 0b0000_0000_0000_0000_0010_0100_1000_0000_0000_0011_1111_0000_0000_0011_0000_0000
-        return fromValue(Int64.parseString("40132240474880"));
+        return fromValue("40132240474880".i64());
     }
 
     /**
@@ -589,7 +591,7 @@ class Permissions {
      */
     public static function stage():Permissions {
         // 4294967296 is well over the integer limit
-        return fromValue(Int64.parseString("1") << 32);
+        return fromValue("1".i64() << 32);
     }
 
     /**
@@ -597,7 +599,7 @@ class Permissions {
      */
     public static function stage_moderator():Permissions {
         // 0b0000_0000_0000_0000_0000_0000_0000_0000_0000_0001_0100_0000_0000_0000_0001_0000
-        return fromValue(Int64.parseString("20971536"));
+        return fromValue("20971536".i64());
     }
 
     /**
@@ -605,7 +607,7 @@ class Permissions {
      */
     public static function elevated():Permissions {
         // 0b0000_0000_0000_0000_0000_0001_0000_0100_0111_0000_0000_0000_0010_0000_0011_1110
-        return fromValue(Int64.parseString("1118570553406"));
+        return fromValue("1118570553406".i64());
     }
 
     /**
@@ -613,14 +615,14 @@ class Permissions {
      */
     public static function events():Permissions {
         // 0b0000_0000_0000_0000_0001_0000_0000_0010_0000_0000_0000_0000_0000_0000_0000_0000
-        return fromValue(Int64.parseString("17600775979008"));
+        return fromValue("17600775979008".i64());
     }
 
     /**
      * A factory method that creates a `Permissions` with all "Events" permissions from the official Discord UI set to `true`.
      */
     public static function advanced():Permissions {
-        return fromValue(Int64.parseString("1") << 3);
+        return fromValue("1".i64() << 3);
     }
 
     public static function _timeout_mask():Int64 {

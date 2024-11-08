@@ -98,15 +98,15 @@ class Asset {
         return this._url;
     }
 
-    public function get_url():String {
+    function get_url():String {
         return this._url;
     }
 
-    public function get_key():String {
+    function get_key():String {
         return this._key;
     }
 
-    public function get_is_animated():Null<Bool> {
+    function get_is_animated():Null<Bool> {
         return this._animated;
     }
 

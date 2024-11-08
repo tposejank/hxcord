@@ -7,13 +7,13 @@ import discord.State.ConnectionState;
 import discord.types.Snowflake;
 import discord.types.IMessageable;
 
-typedef BaseChannel = {
+typedef BaseChannelPayload = {
     var id:String;
     var name:String;
 }
 
-typedef BaseGuildChannel = {
-    >BaseChannel,
+typedef BaseGuildChannelPayload = {
+    >BaseChannelPayload,
     var guild_id:String;
     var position:Int;
     // var permission_overw  permissions later
@@ -21,8 +21,8 @@ typedef BaseGuildChannel = {
     @:optional var parent_id:String;
 }
 
-typedef BaseTextChannel = {
-    >BaseGuildChannel,
+typedef BaseTextChannelPayload = {
+    >BaseGuildChannelPayload,
     var topic:String;
     @:optional var last_message_id:String;
     var last_pin_timestamp:String;
@@ -33,17 +33,17 @@ typedef BaseTextChannel = {
 }
 
 typedef TextChannelPayload = {
-    >BaseTextChannel,
+    >BaseTextChannelPayload,
     var type:Int;
 }
 
 typedef NewsChannelPayload = {
-    >BaseTextChannel,
+    >BaseTextChannelPayload,
     var type:Int;
 }
 
 typedef VoiceChannelPayload = {
-    >BaseTextChannel,
+    >BaseTextChannelPayload,
     var type:Int;
     var bitrate:Int;
     var user_limit:Int;
@@ -51,13 +51,13 @@ typedef VoiceChannelPayload = {
     var video_quality_mode:Int; // 1, 2
 }
 
-typedef CategoryChannel = {
-    >BaseGuildChannel,
+typedef CategoryChannelPayload = {
+    >BaseGuildChannelPayload,
     var type:Int;
 }
 
-typedef StageChannel = {
-    >BaseGuildChannel,
+typedef StageChannelPayload = {
+    >BaseGuildChannelPayload,
     var type:Int;
     var bitrate:Int;
     var user_limit:Int;
@@ -66,7 +66,7 @@ typedef StageChannel = {
 
 // typedef Thread  i hate threads
 
-typedef ForumTag = {
+typedef ForumTagPayload = {
     var id:String;
     var name:String;
     var moderated:Bool;
@@ -74,27 +74,27 @@ typedef ForumTag = {
     @:optional var emoji_name:String;
 }
 
-typedef DefaultReaction = {
+typedef DefaultReactionPayload = {
     var emoji_id:String;
     var emoji_name:String;
 }
 
-typedef BaseForumChannel = {
-    >BaseTextChannel,
-    var available_tags:Array<ForumTag>;
-    @:optional var default_reaction_emoji:DefaultReaction;
+typedef BaseForumChannelPayload = {
+    >BaseTextChannelPayload,
+    var available_tags:Array<ForumTagPayload>;
+    @:optional var default_reaction_emoji:DefaultReactionPayload;
     @:optional var default_sort_order:Int; // 0, 1
     @:optional var default_forum_layout:Int; // 0, 1, 2
     @:optional var flags:Int;
 }
 
-typedef ForumChannel = {
-    >BaseForumChannel,
+typedef ForumChannelPayload = {
+    >BaseForumChannelPayload,
     var type:Int;
 }
 
-typedef MediaChannel = {
-    >BaseForumChannel,
+typedef MediaChannelPayload = {
+    >BaseForumChannelPayload,
     var type:Int;
 }
 
@@ -102,11 +102,11 @@ typedef GuildChannelPayload = {
     >TextChannelPayload,
     >NewsChannelPayload,
     >VoiceChannelPayload,
-    >CategoryChannel,
-    >StageChannel,
+    >CategoryChannelPayload,
+    >StageChannelPayload,
     // thread
-    >ForumChannel,
-    >MediaChannel,
+    >ForumChannelPayload,
+    >MediaChannelPayload,
 }
 
 class GuildChannel extends Snowflake implements IMessageable { // abc
@@ -175,8 +175,7 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
         channels.insert(index, this);
 
         var payload = [];
-        for (_index in 0...channels.length) {
-            var c = channels[_index];
+        for (_index => c in channels) {
             var d:Dynamic = { // dynamic makes compiler not scream
                 id: c.id,
                 position: _index
@@ -197,19 +196,19 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
      * The string that allows you to mention the channel.
      */
     public var mention(get, never):String;
-    public function get_mention():String return '<#${this.id}>';
+    function get_mention():String return '<#${this.id}>';
 
     /**
      * Returns a URL that allows the client to jump to the channel.
      */
     public var jump_url(get, never):String;
-    public function get_jump_url():String return 'https://discord.com/channels/${this.guild.id}/${this.id}';
+    function get_jump_url():String return 'https://discord.com/channels/${this.guild.id}/${this.id}';
     
     /**
      * Returns the channel's creation time in UTC.
      */
     public var created_at(get, never):Date;
-    public function get_created_at():Date return Utils.snowflake_time(this.id);
+    function get_created_at():Date return Utils.snowflake_time(this.id);
 
     /**
      * The category this channel belongs to.
@@ -217,7 +216,7 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
      * If there is no category then this is `null`.
      */
     public var category(get, never):GuildChannel; // categorychannel
-    public function get_category() {
+    function get_category() {
         return guild.get_channel(category_id);
     }
 
@@ -241,7 +240,7 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
         }
         
         // bro wheres unions
-        // var default_role 
+        // var default_role = 
 
         return null;
     }

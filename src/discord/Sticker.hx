@@ -10,7 +10,7 @@ typedef BaseStickerPayload = {
     var format_type:Int;
 }
 
-typedef GuildSticker = {
+typedef GuildStickerPayload = {
     >BaseStickerPayload,
     var type:Int;
     var guild_id:String;

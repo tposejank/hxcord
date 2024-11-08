@@ -9,18 +9,18 @@ enum abstract StatusType(String) from String to String {
     var offline = 'offline';
 }
 
-typedef ClientStatus = {
+typedef ClientStatusPayload = {
     var desktop:StatusType;
     var mobile:StatusType;
     var web:StatusType;
 }
 
-typedef ActivityTimestamps = {
+typedef ActivityTimestampsPayload = {
     var start:Int;
     var end:Int;
 }
 
-typedef ActivityParty = {
+typedef ActivityPartyPayload = {
     var id:String;
     var size:Array<Int>;
 }
@@ -36,19 +36,19 @@ typedef BaseActivityPayload = {
     var created_at:Int;
 }
 
-typedef ActivitySecrets = {
+typedef ActivitySecretsPayload = {
     var join:String;
     var spectate:String;
     var match:String;
 }
 
-typedef ActivityEmoji = {
+typedef ActivityEmojiPayload = {
     var name:String;
     var id:String;
     var animated:Bool;
 }
 
-typedef ActivityAssets = {
+typedef ActivityAssetsPayload = {
     var large_image:String;
     var large_text:String;
     var small_image:String;
@@ -59,24 +59,24 @@ typedef ActivityPayload = {
     >BaseActivityPayload,
     @:optional var state:String;
     @:optional var details:String;
-    @:optional var timestamps:ActivityTimestamps;
+    @:optional var timestamps:ActivityTimestampsPayload;
     @:optional var platform:String;
-    var assets:ActivityAssets;
-    var party:ActivityParty;
+    var assets:ActivityAssetsPayload;
+    var party:ActivityPartyPayload;
     var application_id:String;
     var flags:Int;
-    @:optional var emoji:ActivityEmoji;
-    var secrets:ActivitySecrets;
+    @:optional var emoji:ActivityEmojiPayload;
+    var secrets:ActivitySecretsPayload;
     var session_id:String;
     var instance:Bool;
     var buttons:Array<String>;
     var sync_id:String;
 }
 
-typedef PartialPresenceUpdate = {
+typedef PartialPresenceUpdatePayload = {
     var user:UserPayload;
     var guild_id:String;
     var status:StatusType;
     var activities:Array<ActivityPayload>;
-    var client_status:ClientStatus;
+    var client_status:ClientStatusPayload;
 }

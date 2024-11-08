@@ -1,12 +1,14 @@
 package discord;
 
-import discord.Sticker.GuildSticker;
+import discord.Sticker.GuildStickerPayload;
 import discord.Member;
-import discord.Activity.PartialPresenceUpdate;
-import discord.types.Snowflake;
 import discord.Role.RolePayload;
+import discord.Activity.PartialPresenceUpdatePayload;
+import discord.types.Snowflake;
 import discord.State.ConnectionState;
 import discord.Channel;
+
+using discord.utils.MapUtils;
 
 enum abstract VerificationLevel(Int) from Int to Int {
     var NONE = 0;
@@ -77,7 +79,7 @@ enum abstract GuildFeature(String) from String to String {
     var WELCOME_SCREEN_ENABLED = 'WELCOME_SCREEN_ENABLED';
     var RAID_ALERTS_DISABLED = 'RAID_ALERTS_DISABLED';
 }
-typedef IncidentData = {
+typedef IncidentDataPayload = {
     var invites_disabled_until:String;
     var dms_disabled_until:String;
 }
@@ -94,10 +96,10 @@ typedef BaseGuildPreviewPayload = {
     @:optional var splash:String;
     @:optional var discovery_splash:String;
     // var emojis:List[Emoji]
-    var stickers:Array<GuildSticker>;
+    var stickers:Array<GuildStickerPayload>;
     var features:Array<GuildFeature>;
     var description:String;
-    @:optional var incidents_data:IncidentData;
+    @:optional var incidents_data:IncidentDataPayload;
 }
 
 typedef GuildPayload = {
@@ -134,7 +136,7 @@ typedef GuildPayload = {
     // @:optional var voice_states:NotRequired[List[GuildVoiceState]]
     @:optional var members:Array<MemberPayload>;
     @:optional var channels:Array<GuildChannelPayload>; // GuildChannel
-    @:optional var presences:Array<PartialPresenceUpdate>;
+    @:optional var presences:Array<PartialPresenceUpdatePayload>;
     // @:optional var threads:NotRequired[List[Thread]]
     @:optional var max_presences:Int;
     @:optional var max_members:Int;
@@ -148,7 +150,7 @@ typedef GuildPayload = {
 
 class Guild extends Snowflake {
     private var _channels:Map<String, GuildChannel> = new Map<String, GuildChannel>();
-    public var _members:Map<String, Member> = new Map<String, Member>();
+    private var _members:Map<String, Member> = new Map<String, Member>();
     private var _roles:Map<String, Role> = new Map<String, Role>(); // Role
     // self._voice_states:Dict[int, VoiceState] = {}
     // self._threads:Dict[int, Thread] = {}
@@ -251,7 +253,7 @@ class Guild extends Snowflake {
 
     private var _large:Null<Bool>;
     private var _afk_channel_id:String;
-    private var _incidents_data:Null<IncidentData>;
+    private var _incidents_data:Null<IncidentDataPayload>;
     /**
      * The approximate number of members currently active in the guild. Offline members are excluded.
      * This is `null` unless the guild is obtained using `Client.fetch_guild` or 
@@ -347,32 +349,51 @@ class Guild extends Snowflake {
         // }
     }
 
-    /**
-     * Returns a member with the given ID.
-     * @param user_id The ID to search for.
-     */
-    public function get_member(user_id:String):Member {
-        return this._members.get(user_id);
-    }
-
     public function _add_member(member:Member):Void {
         this._members.set(member.id, member);
+    }
+
+    public function _add_role(role:Role):Void {
+        this._roles.set(role.id, role);
+    }
+
+    public function _remove_role(role_id:String):Role {
+        return this._roles.pop(role_id);
+    }
+
+    public function _resolve_channel(id:String):Dynamic {
+        if (id == null) return null;
+
+        var thread = this._members.get(id); // TBD: switch to thread
+        if (thread != null) return thread;
+        return this._channels.get(id);
+    }
+
+    /**
+     * Returns a channel or thread with the given ID.
+     * @param channel_id The ID to search for.
+     * @return `Dynamic`: `GuildChannel` or `Thread`.
+     */
+    public function get_channel_or_thread(channel_id:String):Dynamic {
+        var thread = this._members.get(id); // TBD: switch to thread
+        if (thread != null) return thread;
+        return this._channels.get(channel_id);
     }
 
     /**
      * Returns a channel with the given ID.
      * @param channel_id The ID to search for.
      */
-    public function get_channel(channel_id:String) {
+    public function get_channel(channel_id:String):GuildChannel {
         return this._channels.get(channel_id);
     }
 
     /**
-     * Returns a role with the given ID.
-     * @param role_id The ID to search for.
+     * Returns a thread with the given ID.
+     * @param thread_id The ID to search for.
      */
-    public function get_role(role_id:String):Role {
-        return this._roles.get(role_id);
+    public function get_thread(thread_id:String):Member { // TBD: Switch to thread
+        return this._members.get(thread_id);
     }
 
     /**
@@ -380,11 +401,24 @@ class Guild extends Snowflake {
      */
     public var channels(get, never):Array<GuildChannel>;
     function get_channels():Array<GuildChannel> {
-        var values:Array<GuildChannel> = [];
-        for (c in _channels.iterator()) {
-            values.push(c);
+        return this._channels.values();
+    }
+
+    /**
+     * Indicates if the guild is a 'large' guild.
+     * 
+     * A large guild is defined as having more than `large_threshold` count
+     * members, which is set to the maximum of 250.
+     */
+    public var large(get, never):Bool;
+    function get_large():Bool {
+        if (this._large != null) {
+            if (this._member_count != null) {
+                return this._member_count >= 250;
+            }
+            return this._members.length() >= 250;
         }
-        return values;
+        return this._large;
     }
  
     /**
@@ -397,11 +431,143 @@ class Guild extends Snowflake {
     }
 
     /**
+     * A list of members that belong to this guild.
+     */
+    public var members(get, never):Array<Member>;
+    function get_members():Array<Member> {
+        return this._members.values();
+    }
+
+    /**
+     * Returns a member with the given ID.
+     * @param user_id The ID to search for.
+     */
+    public function get_member(user_id:String):Member {
+        return this._members.get(user_id);
+    }
+
+    /**
+     * Returns a sequence of the guild's roles in hierarchy order.
+     * 
+     * The first element of this sequence will be the lowest role in the
+     * hierarchy.
+     */
+    public var roles(get, never):Array<Role>;
+    function get_roles():Array<Role> {
+        var result:Array<Role> = this._roles.values();
+        result.sort((a:Role, b:Role) -> {
+            if (Role.lower_than(a, b)) return -1;
+            else if (Role.lower_than(b, a)) return 1;
+            else return 0;
+        });
+        return result;
+    }
+
+    /**
+     * Returns a role with the given ID.
+     * @param role_id The ID to search for.
+     */
+    public function get_role(role_id:String):Role {
+        return this._roles.get(role_id);
+    }
+
+    /**
      * Gets the @everyone role that all members have by default.
      */
     public var default_role(get, never):Role;
     function get_default_role():Role  {
         return this._roles.get(this.id);
+    }
+
+    /**
+     * Gets the premium subscriber role, AKA "boost" role, in this guild.
+     */
+    public var premium_subscriber_role(get, never):Role;
+    function get_premium_subscriber_role():Role {
+        for (r in _roles.iterator()) {
+            if (r.is_premium_subscriber()) {
+                return r;
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Gets the role associated with this client's user, if any.
+     */
+    public var self_role(get, never):Role;
+    function get_self_role():Role {
+        for (r in _roles.iterator()) {
+            if (r.tags != null) {
+                if (r.tags.bot_id == this._state.self_id) {
+                    return r;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * The member that owns the guild.
+     */
+    public var owner(get, never):Member;
+    function get_owner():Member {
+        return this.get_member(this.owner_id);
+    }
+
+    /**
+     * Returns the guild's icon asset, if available.
+     */
+    public var icon(get, never):Asset;
+    function get_icon():Asset {
+        if (this._icon == null)
+            return null;
+
+        return Asset._from_guild_icon(this._state, this.id, this._icon);
+    }
+
+    /**
+     * Returns the guild's banner asset, if available.
+     */
+    public var banner(get, never):Asset;
+    function get_banner():Asset {
+        if (this._banner == null)
+            return null;
+
+        return Asset._from_guild_image(this._state, this.id, this._banner, 'banners');
+    }
+
+    /**
+     * Returns the guild's invite splash asset, if available.
+     */
+    public var splash(get, never):Asset;
+    function get_splash():Asset {
+        if (this._splash == null)
+            return null;
+
+        return Asset._from_guild_image(this._state, this.id, this._splash, 'splashes');
+    }
+
+    /**
+     * Returns the guild's discovery splash asset, if available.
+     */
+    public var discovery_splash(get, never):Asset;
+    function get_discovery_splash():Asset {
+        if (this._discovery_splash == null)
+            return null;
+
+        return Asset._from_guild_image(this._state, this.id, this._discovery_splash, 'discovery-splashes');
+    }
+
+    /**
+     * Returns the member count if available.
+     * 
+     * Due to a Discord limitation, in order for this attribute to remain up-to-date and
+     * accurate, it requires `Intents.members` to be specified.
+     */
+    public var member_count(get, never):Null<Int>;
+    function get_member_count():Null<Int> {
+        return this._member_count;
     }
 
     /**
@@ -419,7 +585,15 @@ class Guild extends Snowflake {
         var count = this._member_count;
         if (count == null) return false;
 
-        return count == Lambda.count(this._members);
+        return count == this._members.length();
+    }
+
+    /**
+     * Returns the guild's creation time in UTC.
+     */
+    public var created_at(get, never):Date;
+    function get_created_at():Date {
+        return Utils.snowflake_time(this.id);
     }
 }
 

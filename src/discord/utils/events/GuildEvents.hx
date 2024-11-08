@@ -10,7 +10,7 @@ class GuildAvailable extends Event {
 
     public function new(guild:Guild) {
         this.guild = guild;
-        super("guild_available", false, false);
+        super("guild_available");
     }
 }
 
@@ -22,7 +22,7 @@ class GuildAvailable extends Event {
 
     public function new(guild:Guild) {
         this.guild = guild;
-        super("guild_unavailable", false, false);
+        super("guild_unavailable");
     }
 }
 
@@ -34,7 +34,7 @@ class GuildJoin extends Event {
 
     public function new(guild:Guild) {
         this.guild = guild;
-        super("guild_join", false, false);
+        super("guild_join");
     }
 }
 
@@ -46,7 +46,7 @@ class GuildJoin extends Event {
 
     public function new(guild:Guild) {
         this.guild = guild;
-        super("guild_remove", false, false);
+        super("guild_remove");
     }
 }
 
@@ -58,6 +58,42 @@ class GuildJoin extends Event {
 
     public function new(guild:Guild) {
         this.guild = guild;
-        super("guild_update", false, false);
+        super("guild_update");
+    }
+}
+
+/**
+ * An event called when a role is created in a guild.
+ */
+ class GuildRoleCreate extends Event {
+    public var role:Role;
+
+    public function new(role:Role) {
+        this.role = role;
+        super("guild_role_create");
+    }
+}
+
+/**
+ * An event called when a role is deleted in a guild.
+ */
+ class GuildRoleDelete extends Event {
+    public var role:Role;
+
+    public function new(role:Role) {
+        this.role = role;
+        super("guild_role_delete");
+    }
+}
+
+/**
+ * An event called when a role is updated in a guild.
+ */
+ class GuildRoleUpdate extends Event {
+    public var role:Role;
+
+    public function new(role:Role) {
+        this.role = role;
+        super("guild_role_update");
     }
 }

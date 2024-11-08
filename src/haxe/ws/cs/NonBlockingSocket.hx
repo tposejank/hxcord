@@ -1,6 +1,8 @@
 package haxe.ws.cs;
 
 import sys.net.Socket;
+
+#if cs
 import cs.system.net.sockets.Socket in NativeSocket;
 import cs.system.net.sockets.NetworkStream;
 import cs.system.net.sockets.SocketAsyncEventArgs;
@@ -42,3 +44,4 @@ class NonBlockingSocket extends Socket {
         return Socket.select(read, write, others, timeout);
     }
 }
+#end

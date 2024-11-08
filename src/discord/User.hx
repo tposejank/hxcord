@@ -11,6 +11,9 @@ import discord.types.IMessageable;
 import discord.types.Snowflake;
 import discord.Member;
 
+using discord.utils.MapUtils;
+using discord.utils.StringUtils;
+
 typedef AvatarDecorationData = {
     var asset:String;
     var sku_id:String;
@@ -148,7 +151,7 @@ class BaseUser extends Snowflake {
      */
     public var created_at(get, never):Date;
 
-    public function new(_state:ConnectionState, _payload:OneOfTwo<UserPayload, PartialUserPayload>) {
+    public function new(_state:ConnectionState, _payload:UserPayload) {
         this._state = _state;
         this._update(_payload);
     }
@@ -206,9 +209,9 @@ class BaseUser extends Snowflake {
     function get_default_avatar():Asset {
         var avatar_id:Int = 0;
         if (this.discriminator == '0') {
-            avatar_id = Int64.toInt((Int64.parseString(this.id) >> 22) % 6);
+            avatar_id = Int64.toInt((this.id.i64() >> 22) % 6);
         } else {
-            avatar_id = Std.parseInt(discriminator) % 5;
+            avatar_id = Std.parseInt(this.discriminator) % 5;
         }
 
         return Asset._from_default_avatar(this._state, avatar_id);
@@ -306,7 +309,7 @@ class User extends BaseUser implements IMessageable {
     }
 
     function get_mutual_guilds():Array<Guild> {
-        return [null]; // [guild for guild in self._state._guilds.values() if guild.get_member(self.id)]
+        return _state._guilds.values().filter(guild -> guild.get_member(this.id) != null);
     }
 
     // TBD
@@ -393,11 +396,6 @@ class ClientUser extends User {
     }
 
     override function get_mutual_guilds():Array<Guild> {
-        var values:Array<Guild> = [];
-        for (value in _state._guilds.iterator()) {
-            values.push(value);
-        }
-
-        return values;
+        return _state._guilds.values();
     }
 }

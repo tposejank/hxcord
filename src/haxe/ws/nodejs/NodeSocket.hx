@@ -1,5 +1,6 @@
 package haxe.ws.nodejs;
 
+#if js
 import js.node.Net;
 import js.node.net.Server;
 import js.node.net.Socket;
@@ -108,3 +109,4 @@ class NodeSocket {
         return ret;
     }
 }
+#end

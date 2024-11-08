@@ -1,6 +1,8 @@
 package discord;
 
 // Events
+import discord.utils.events.MemberEvents.MemberUnban;
+import discord.utils.events.MemberEvents.MemberBan;
 import haxe.Json;
 import discord.Http.Route;
 import discord.Http.HTTPClient;
@@ -37,6 +39,11 @@ class ConnectionState {
     public var application_id:String;
     public var application_flags:Dynamic;
 
+    public var self_id(get, never):String;
+    function get_self_id():String {
+        return this.user.id ?? null;
+    }
+
     public function store_user(data:UserPayload):User {
         var user_id:String = data.id;
 
@@ -63,6 +70,16 @@ class ConnectionState {
                 parse_guild_update(payload.d);
             case 'GUILD_DELETE':
                 parse_guild_delete(payload.d);
+            case 'GUILD_BAN_ADD':
+                parse_guild_ban_add(payload.d);
+            case 'GUILD_BAN_REMOVE':
+                parse_guild_ban_remove(payload.d);
+            case 'GUILD_ROLE_CREATE':
+                parse_guild_role_create(payload.d);
+            case 'GUILD_ROLE_DELETE':
+                parse_guild_role_delete(payload.d);
+            case 'GUILD_ROLE_UPDATE':
+                parse_guild_role_update(payload.d);
             case 'PRESENCE_UPDATE':
                 parse_presence_update(payload.d);
             case 'MESSAGE_CREATE':
@@ -188,8 +205,7 @@ class ConnectionState {
     public function parse_guild_update(data:Dynamic) {
         var guild:Guild = this._get_guild(data.id);
         if (guild != null) {
-            // unfortunately there is no copy module in haxe
-            // so bear with me
+            // TBD: guild.copy
             guild._from_data(data);
             this.dispatch(new GuildUpdate(guild));
         } else {
@@ -217,6 +233,62 @@ class ConnectionState {
 
         this.dispatch(new GuildRemove(guild));
         _remove_guild(guild);
+    }
+
+    public function parse_guild_ban_add(data:Dynamic):Void {
+        var guild:Guild = this._get_guild(data.guild_id);
+        if (guild != null) {
+            var user = new User(this, data.user);
+            var member:Dynamic = guild.get_member(user.id) ?? user;
+            this.dispatch(new MemberBan(guild, member));
+        }
+    }
+
+    public function parse_guild_ban_remove(data:Dynamic):Void {
+        var guild:Guild = this._get_guild(data.guild_id);
+        if (guild != null && data.user != null) {
+            var user = this.store_user(data.user);
+            this.dispatch(new MemberUnban(guild, user));
+        }
+    }
+
+    public function parse_guild_role_create(data:Dynamic):Void {
+        var guild:Guild = this._get_guild(data.guild_id);
+        if (guild == null) {
+            Log.error('GUILD_ROLE_CREATE is referencing an unknown guild ID: ${data.guild_id}. Discarding!');
+            return;
+        }
+
+        var role:Role = new Role(guild, this, data.role);
+        guild._add_role(role);
+        this.dispatch(new GuildRoleCreate(role));
+    }
+
+    public function parse_guild_role_delete(data:Dynamic):Void {
+        var guild:Guild = this._get_guild(data.guild_id);
+        if (guild == null) {
+            Log.error('GUILD_ROLE_DELETE is referencing an unknown guild ID: ${data.guild_id}. Discarding!');
+            return;
+        }
+
+        var role:Role = guild._remove_role(data.role_id);
+        this.dispatch(new GuildRoleDelete(role));
+    }
+
+    public function parse_guild_role_update(data:Dynamic) {
+        var guild:Guild = this._get_guild(data.guild_id);
+        if (guild == null) {
+            Log.error('GUILD_ROLE_UPDATE is referencing an unknown guild ID: ${data.guild_id}. Discarding!');
+            return;
+        }
+
+        var role = guild.get_role(data.role.id);
+        if (role != null) {
+            // var old_role = Role._copy(role);
+            // TBD: missing role.copy
+            role._update(data.role);
+            this.dispatch(new GuildRoleUpdate(role));
+        }
     }
 
     public function parse_message_create(data:Dynamic):Void {

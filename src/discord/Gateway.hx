@@ -46,7 +46,7 @@ class Payload
  * https://github.com/SanicBTW/HxDiscordGateway/blob/master/source/discord/Gateway.hx
  */
 class Gateway extends discord.utils.events.EventDispatcher {
-    var ticked:Bool = false;
+    private var ticked:Bool = false;
 
     /**
      * The WebSocket that maintains the connection with Discord's Gateway.
@@ -56,7 +56,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The timer for Heartbeat events.
      */
-    var hb_timer:haxe.Timer;
+    private var hb_timer:haxe.Timer;
 
     /**
      * The token to access the Gateway. It is not recommended to share.
@@ -377,12 +377,12 @@ class Gateway extends discord.utils.events.EventDispatcher {
         var payload:Payload = new Payload(IDENTIFY, {
             token: this._token, // token
             intents: this.intents.value,
-            properties: 
-            {
+            properties: {
                 os: "Bot (hxcord)",
                 browser: #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end,
                 device: "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end
-            }
+            },
+            large_threshold: 250
         });
 
         send(payload.toString());

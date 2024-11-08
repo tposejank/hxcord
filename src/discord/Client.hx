@@ -27,26 +27,16 @@ class Client extends EventDispatcher {
      */
     public var ws:Gateway;
 
-    /**
-     * Measures latency between a HEARTBEAT and a HEARTBEAT_ACK in seconds.
-     */
-    public var latency(get, never):Float;
-
-    /**
-     * The user this Client is connected to.
-     */
-    public var user(get, never):ClientUser;
-
     public var state:ConnectionState;
 
     public var http:HTTPClient;
 
-    public function new(_token:String, intents:Intents) {
+    public function new(token:String, intents:Intents) {
         super();
 
-        Log.init(LogLevel.INFO);
+        Log.init(LogLevel.TEST);
 
-        this.token = _token;
+        this.token = token;
         this.intents = intents;
         ws = new Gateway(this.token, intents);
 
@@ -112,11 +102,15 @@ class Client extends EventDispatcher {
         // }
     }
 
-    public function get_latency():Float {
+    function get_latency():Float {
         return ws?.latency ?? -1;
     }
 
-    public function get_user():ClientUser {
+    /**
+     * The user this Client is connected to.
+     */
+    public var user(get, never):ClientUser;
+    function get_user():ClientUser {
         return state.user;
     }
 }

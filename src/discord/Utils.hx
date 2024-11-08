@@ -6,9 +6,10 @@ import haxe.io.Bytes;
 import haxe.crypto.Base64;
 
 using StringTools;
+using discord.utils.StringUtils;
 
 class Utils {
-    public static var DISCORD_EPOCH:Int64 = Int64.parseString("1420070400000");
+    public static var DISCORD_EPOCH:Int64 = "1420070400000".i64();
 
     public static function _bytesStartsWith(data:Bytes, prefix:Bytes):Bool {
         if (data.length < prefix.length) return false;
@@ -54,7 +55,7 @@ class Utils {
      */
     public static function snowflake_time(id:String):Date {
         // First, convert the Snowflake into an Int64
-        var id_int64:Int64 = Int64.parseString(id);
+        var id_int64:Int64 = id.i64();
         // then right shift the snowflake 22 bits to get the timestamp part
         var timestamp = ((id_int64 >> 22) + DISCORD_EPOCH);
         // then Int64.toStr it then parse it into a float

@@ -24,7 +24,7 @@ typedef ChannelMentionPayload = {
     var name:String;
 }
 
-typedef ReactionCountDetails = {
+typedef ReactionCountDetailsPayload = {
     var burst:Int;
     var normal:Int;
 }
@@ -34,7 +34,7 @@ typedef ReactionPayload = {
     var me:Bool;
     var emoji:Dynamic; // PartialEmoji
     var me_burst:Bool;
-    var count_details:ReactionCountDetails;
+    var count_details:ReactionCountDetailsPayload;
     var burst_colors:Array<String>;
 }
 
@@ -55,12 +55,12 @@ typedef AttachmentPayload = {
     @:optional var flags:Int;
 }
 
-typedef MessageActivity = {
+typedef MessageActivityPayload = {
     var type:Int; // 1, 2, 3, 5
     var party_id:String;
 }
 
-typedef MessageApplication = {
+typedef MessageApplicationPayload = {
     var id:String;
     var description:String;
     @:optional var icon:String;
@@ -68,14 +68,14 @@ typedef MessageApplication = {
     @:optional var cover_image:String;
 }
 
-typedef MessageReference = {
+typedef MessageReferencePayload = {
     var message_id:String;
     var channel_id:String;
     var guild_id:String;
     var fail_if_not_exists:Bool;
 }
 
-typedef RoleSubscriptionData = {
+typedef RoleSubscriptionDataPayload = {
     var role_subscription_listing_id:String;
     var tier_name:String;
     var total_months_subscribed:Int;
@@ -103,10 +103,10 @@ typedef MessagePayload = {
     @:optional var reactions:Array<ReactionPayload>;
     @:optional var nonce:String;
     @:optional var webhook_id:String;
-    @:optional var activity:MessageActivity;
-    @:optional var application:MessageApplication;
+    @:optional var activity:MessageActivityPayload;
+    @:optional var application:MessageApplicationPayload;
     @:optional var application_id:String;
-    @:optional var message_reference:MessageReference;
+    @:optional var message_reference:MessageReferencePayload;
     @:optional var flags:Int;
     @:optional var sticker_items:Array<Dynamic>; //StickerItem
     @:optional var referenced_message:MessagePayload;
@@ -114,7 +114,7 @@ typedef MessagePayload = {
     @:optional var interaction_metadata:Dynamic;
     // @:optional var components:Component
     @:optional var position:Int;
-    @:optional var role_subscription_data:RoleSubscriptionData;
+    @:optional var role_subscription_data:RoleSubscriptionDataPayload;
     @:optional var thread:Dynamic; // Thread
 
     @:optional var guild_id:String; // whys this here
@@ -205,7 +205,7 @@ class PartialMessage extends Snowflake {
 class Message extends PartialMessage {
     public var webhook_id:String;
 
-    public var activity:MessageActivity;
+    public var activity:MessageActivityPayload;
 
     public var _edited_timestamp:Date;
 

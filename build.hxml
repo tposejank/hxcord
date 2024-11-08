@@ -5,3 +5,24 @@
 --define message.reporting pretty
 -D windows
 --cmd hl bin/script.hl
+
+# -cp src
+# -D doc-gen
+# discord
+# haxe.ws
+# --no-output
+# --each
+
+# --next
+# -xml docs/neko.xml
+# -neko dummy.n
+
+# --next
+# -xml docs/hl.xml
+# -hl dummy.hl
+
+# --next
+# -xml docs/cpp.xml
+# -cpp dummycpp
+
+# # haxelib run dox -i docs/ -o docs/pages --title "API Documentation" -D version "0.0.1" -D website "https://tposejank.github.io/hxcord" -D logo "https://github.com/tposejank/hxcord/blob/main/assets/hxcord_full_300x75.png?raw=true" -D themeColor 0x5865F2 -D textColor 0xFFFFFF -D description "A Discord API and Gateway wrapper, written in Haxe." -D source-path https://github.com/tposejank/hxcord/blob/main/

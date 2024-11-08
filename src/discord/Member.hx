@@ -1,14 +1,14 @@
 package discord;
 
-import discord.Activity.ClientStatus;
-import discord.Activity.PartialPresenceUpdate;
+import discord.Activity.ClientStatusPayload;
+import discord.Activity.PartialPresenceUpdatePayload;
 import discord.types.IMessageable;
 import discord.types.Snowflake;
 import discord.State.ConnectionState;
 import discord.User.AvatarDecorationData;
 import discord.User.UserPayload;
 
-typedef Nickname = {
+typedef NicknamePayload = {
     var nick:String;
 }
 
@@ -63,7 +63,7 @@ class _ClientStatus {
         
     }
 
-    public function _update(status:String, data:ClientStatus) {
+    public function _update(status:String, data:ClientStatusPayload) {
         _status = status;
         desktop = data.desktop;
         mobile = data.mobile;
@@ -78,48 +78,48 @@ class Member extends Snowflake implements IMessageable {
      * The member's username.
      */
     public var name(get, set):String;
-    public function get_name() return _user.name;
-    public function set_name(n) return _user.name = n;
+    function get_name() return _user.name;
+    function set_name(n) return _user.name = n;
 
     /**
      * The member's discriminator. This is a legacy concept that is no longer used.
      */
     public var discriminator(get, set):String;
-    public function get_discriminator() return _user.discriminator;
-    public function set_discriminator(n) return _user.discriminator = n;
+    function get_discriminator() return _user.discriminator;
+    function set_discriminator(n) return _user.discriminator = n;
 
     /**
      * The member's global nickname, taking precedence over the username in display.
      */
     public var global_name(get, set):String;
-    public function get_global_name() return _user.global_name;
-    public function set_global_name(n) return _user.global_name = n;
+    function get_global_name() return _user.global_name;
+    function set_global_name(n) return _user.global_name = n;
 
     /**
      * Specifies if the user is a bot account.
      */
     public var bot(get, set):Null<Bool>;
-    public function get_bot() return _user.bot;
-    public function set_bot(n) return _user.bot = n;
+    function get_bot() return _user.bot;
+    function set_bot(n) return _user.bot = n;
 
     /**
      * Specifies if the user is a system user (i.e. represents Discord officially).
      */
     public var system(get, set):Null<Bool>;
-    public function get_system() return _user.system;
-    public function set_system(n) return _user.system = n;
+    function get_system() return _user.system;
+    function set_system(n) return _user.system = n;
 
     /**
      * Returns a string that allows you to mention the member.
      */
     public var mention(get, never):String;
-    public function get_mention() return _user.mention;
+    function get_mention() return _user.mention;
 
     /**
      * `PublicFlags`: The publicly available flags the member has.
      */
     public var public_flags(get, never):Dynamic;
-    public function get_public_flags() return _user.public_flags;
+    function get_public_flags() return _user.public_flags;
 
     /**
      * `Asset`: Returns an `Asset` for the global avatar the member has.
@@ -129,13 +129,13 @@ class Member extends Snowflake implements IMessageable {
      * If you want the avatar that a member has displayed, consider `display_avatar`.
      */
     public var avatar(get, never):Asset;
-    public function get_avatar() return _user.avatar;
+    function get_avatar() return _user.avatar;
 
     /**
      * `Asset`: Returns the default avatar for a given user.
      */
     public var default_avatar(get, never):Asset;
-    public function get_default_avatar() return _user.default_avatar;
+    function get_default_avatar() return _user.default_avatar;
 
     /**
      * `Asset`: Returns the avatar decoration the user has.
@@ -143,7 +143,7 @@ class Member extends Snowflake implements IMessageable {
      * If the user has not set an avatar decoration, `null` is returned.
      */
     public var avatar_decoration(get, never):Asset;
-    public function get_avatar_decoration() return _user.avatar_decoration;
+    function get_avatar_decoration() return _user.avatar_decoration;
     
     /**
      * Returns the SKU ID of the avatar decoration the user has.
@@ -151,7 +151,7 @@ class Member extends Snowflake implements IMessageable {
      * If the user has not set an avatar decoration, `null` is returned.
      */
     public var avatar_decoration_sku_id(get, never):Dynamic;
-    public function get_avatar_decoration_sku_id() return _user.avatar_decoration_sku_id;
+    function get_avatar_decoration_sku_id() return _user.avatar_decoration_sku_id;
 
     /**
      * `Asset`: Returns the user's banner asset, if available.
@@ -159,28 +159,28 @@ class Member extends Snowflake implements IMessageable {
      * This information is only available via `Client.fetch_user`.
      */
     public var banner(get, never):Asset;
-    public function get_banner() return _user.banner;
+    function get_banner() return _user.banner;
 
     /**
      * A user's accent color is only shown if they do not have a banner.
      * This will only be available if the user explicitly sets a color.
      */
     public var accent_colour(get, never):Colour;
-    public function get_accent_colour() return _user.accent_colour;
+    function get_accent_colour() return _user.accent_colour;
 
     /**
      * A property that returns a colour denoting the rendered colour
      * for the user. This always returns 0xFF000000.
      */
     public var colour(get, never):Colour;
-    public function get_colour() return _user.colour;
+    function get_colour() return _user.colour;
 
     /**
      * Returns the user's creation time in UTC.
      * This is when the user's Discord account was created.
      */
     public var created_at(get, never):Date;
-    public function get_created_at() return _user.created_at;
+    function get_created_at() return _user.created_at;
 
     /**
      * Returns the user's display name.
@@ -190,7 +190,7 @@ class Member extends Snowflake implements IMessageable {
      * that is returned instead.
      */
     public var display_name(get, never):String;
-    public function get_display_name() {
+    function get_display_name() {
         return nick ?? (global_name ?? name);
     }
 
@@ -202,7 +202,7 @@ class Member extends Snowflake implements IMessageable {
      * is returned instead.
      */
     public var display_avatar(get, never):Asset; // ASSET
-    public function get_display_avatar() {
+    function get_display_avatar() {
         return guild_avatar ?? (_user.avatar ?? _user.default_avatar);
     }
 
@@ -210,7 +210,7 @@ class Member extends Snowflake implements IMessageable {
      * Returns the member's display avatar. If unavailable, `null` is returned.
      */
     public var guild_avatar(get, never):Asset; // ASSET
-    public function get_guild_avatar() {
+    function get_guild_avatar() {
         if (this._avatar == null)
             return null;
         return Asset._from_guild_avatar(this._state, this.guild.id, this.id, this._avatar);
@@ -227,7 +227,7 @@ class Member extends Snowflake implements IMessageable {
      * If the user has not set a guild avatar decoration, `null` is returned.
      */
     public var guild_avatar_decoration(get, never):Asset;
-    public function get_guild_avatar_decoration() return {
+    function get_guild_avatar_decoration() return {
         if (this._avatar_decoration_data != null)
             return Asset._from_avatar_decoration(this._state, this._avatar_decoration_data.asset);
         return null;
@@ -239,7 +239,7 @@ class Member extends Snowflake implements IMessageable {
      * If the user has not set a guild avatar decoration, `null` is returned.
      */
     public var guild_avatar_decoration_sku_id(get, never):String;
-    public function get_guild_avatar_decoration_sku_id() return {
+    function get_guild_avatar_decoration_sku_id() return {
         return _avatar_decoration_data?.sku_id ?? null;
     }
 
@@ -282,7 +282,7 @@ class Member extends Snowflake implements IMessageable {
      */
     public var timed_out_until:Date;
 
-    public var _avatar:String;
+    private var _avatar:String;
     public var _roles:Array<String> = [];
     private var _client_status:_ClientStatus;
     private var _permissions:String;
@@ -323,7 +323,7 @@ class Member extends Snowflake implements IMessageable {
             this.timed_out_until = Utils.iso8601_to_date(data.communication_disabled_until);
     }
 
-    public function _presence_update(data:PartialPresenceUpdate, user:UserPayload):Array<User> {
+    public function _presence_update(data:PartialPresenceUpdatePayload, user:UserPayload):Array<User> {
         this.activities = []; //activity.py
         for (activity in data.activities) {
             this.activities.push(activity);
@@ -377,7 +377,7 @@ class Member extends Snowflake implements IMessageable {
         return null;
     }
 
-    function get_roles():Array<Roles> {
+    function get_roles():Array<Role> {
         var result = [];
         for (rid in this._roles) {
             var role = this.guild.get_role(rid);
@@ -386,7 +386,9 @@ class Member extends Snowflake implements IMessageable {
 
         result.push(this.guild.default_role);
         result.sort((a:Role, b:Role) -> {
-            return a.position - b.position;
+            if (Role.lower_than(a, b)) return -1;
+            else if (Role.lower_than(b, a)) return 1;
+            else return 0;
         });
 
         return result;

@@ -1,6 +1,7 @@
 package haxe.ws.java;
 
 import haxe.io.Bytes;
+#if java
 import java.io.NativeInput;
 import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
@@ -26,3 +27,4 @@ class NioSocketInput extends NativeInput {
         return super.readBytes(s, pos, len);
     }
 }
+#end

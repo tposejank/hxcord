@@ -2,6 +2,7 @@ package haxe.ws.java;
 
 import haxe.io.BytesBuffer;
 import haxe.io.BytesOutput;
+#if java
 import java.nio.ByteBuffer;
 
 @:access(haxe.ws.java.NioSocket)
@@ -20,3 +21,4 @@ class NioSocketOutput extends BytesOutput {
         b = new BytesBuffer();
     }
 }
+#end
