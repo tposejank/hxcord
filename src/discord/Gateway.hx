@@ -51,12 +51,12 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The WebSocket that maintains the connection with Discord's Gateway.
      */
-    private var ws:WebSocket;
+    public var ws:WebSocket;
 
     /**
      * The timer for Heartbeat events.
      */
-    private var hb_timer:haxe.Timer;
+    public var hb_timer:haxe.Timer;
 
     /**
      * The token to access the Gateway. It is not recommended to share.
@@ -66,7 +66,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * Internal tracker for the Gateway be initialized or not.
      */
-    private var initialized:Bool = false;
+    public var initialized:Bool = false;
 
     // Gateway connection parameters
 
@@ -80,14 +80,14 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The resume URL, received in the `READY` event (Opcode 0)
      */
-    private var resumeURL:String = null;
+    public var resumeURL:String = null;
 
     /**
      * The ammount of time to pass between each Heartbeat
      * 
      * Received in the `HELLO` event (Opcode 10) 
      */
-    private var heartbeatDelay:Int = 0; // MS
+    public var heartbeatDelay:Int = 0; // MS
 
     /**
      * Unix timestamp of the last heartbeat (1) sent.
@@ -97,7 +97,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * Unix timestamp of the last heartbeat (11) received.
      */
-    private var lastHeartbeatAckReceived:Float = 0;
+    public var lastHeartbeatAckReceived:Float = 0;
 
     /**
      * Measures latency between a HEARTBEAT and a HEARTBEAT_ACK in seconds.
@@ -105,6 +105,13 @@ class Gateway extends discord.utils.events.EventDispatcher {
     public var latency(get, never):Float;
 
     public var intents:Intents;
+
+    /**
+     * Whether to compress the connection or not. 
+     * This value is only sent after an Identify is 
+     * requested.
+     */
+    public var compress_connection:Bool = true;
 
     private var _weSentZeroToDiscord:Bool = false;
 
@@ -174,8 +181,13 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 case StrMessage(content):
                     haxe.EntryPoint.runInMainThread(onMessage.bind(content));
                 case BytesMessage(content):
-                    trace(content);
-                    // this is unused
+                    // haxe.zip automatically uses zlib-flush
+                    haxe.EntryPoint.runInMainThread(
+                        onMessage
+                        .bind(haxe.zip.Uncompress.run(
+                            content.readAllAvailableBytes()
+                        ).toString())
+                    );
             }
         }
 
@@ -382,7 +394,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
                 browser: #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end,
                 device: "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end
             },
-            large_threshold: 250
+            large_threshold: 250,
+            compress: compress_connection
         });
 
         send(payload.toString());

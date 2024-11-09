@@ -2,9 +2,31 @@
 --main Main
 --hl bin/script.hl
 -D no-deprecation-warnings
---define message.reporting pretty
+
+# Used for User-Agent strings. 
+# Change accordingly to your OS.
+# (macos, linux, windows)
+
 -D windows
+
+# Enable this flag if there should 
+# not be a Thread Pool managing 
+# WebSocket events.
+# Thread Pooling helps your gateway 
+# not wait around until done when
+# you perform REST requests.
+
+# -D NO_TRUE_ASYNC
+
+# enable this flag for 
+# WebSocket debug messages.
+
+# -D WSDEBUG 
+
+--define message.reporting pretty
 --cmd hl bin/script.hl
+
+# The HXML code below is for Dox doc generation
 
 # -cp src
 # -D doc-gen

@@ -1,5 +1,6 @@
 package discord;
 
+import sys.thread.ElasticThreadPool;
 import discord.Http.HTTPClient;
 import haxe.Exception;
 import discord.log.Log;
@@ -31,6 +32,10 @@ class Client extends EventDispatcher {
 
     public var http:HTTPClient;
 
+    #if !NO_TRUE_ASYNC
+    public var thread_pool:ElasticThreadPool;
+    #end
+
     public function new(token:String, intents:Intents) {
         super();
 
@@ -43,8 +48,34 @@ class Client extends EventDispatcher {
         this.http = new HTTPClient(this.token);
         this.state = new ConnectionState(this, this.dispatchEvent, this.http);
 
-        ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, onMessage);
+        #if !NO_TRUE_ASYNC
+        thread_pool = new ElasticThreadPool(20);
+        ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, (e) -> {
+            thread_pool.run(() -> {
+                state.on_dispatch(e);
+            });
+        }, false, 1);
+        #else
         ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, state.on_dispatch, false, 1);
+        #end
+    }
+
+    /**
+     * Sets if the WebSocket connection should be compressed before connecting.
+     * 
+     * Messages in a compressed WebSocket connection are received as a `zlib-stream` and
+     * are uncompressed with `haxe.zip.Uncompress`.
+     * 
+     * Messages sent in a compressed WebSocket connection do not need to be compressed and
+     * turned into a `zlib-stream`-like `Bytes` object.
+     * 
+     * This property can only be changed before a connection starts, and if changed during
+     * the connection, you must wait until the client sends an Identify payload again.
+     * 
+     * @param compress If the connection should receive messages that are compressed.
+     */
+    public function should_compress_connection(compress:Bool = true) {
+        ws.compress_connection = compress;
     }
 
     /**
