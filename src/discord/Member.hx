@@ -1,9 +1,8 @@
 package discord;
 
+import discord.Channel.Messageable;
 import discord.Activity.ClientStatusPayload;
 import discord.Activity.PartialPresenceUpdatePayload;
-import discord.types.IMessageable;
-import discord.types.Snowflake;
 import discord.State.ConnectionState;
 import discord.User.AvatarDecorationData;
 import discord.User.UserPayload;
@@ -71,7 +70,7 @@ class _ClientStatus {
     }
 }
 
-class Member extends Snowflake implements IMessageable {
+class Member extends Messageable {
     private var _user:User;
 
     /**
@@ -290,8 +289,6 @@ class Member extends Snowflake implements IMessageable {
 
     public var guild_permissions(get, never):Permissions;
 
-    private var _state:ConnectionState;
-
     public var roles(get, never):Array<Role>;
 
     public function new(data:MemberWithUserPayload, guild:Guild, _state:ConnectionState) {
@@ -421,9 +418,5 @@ class Member extends Snowflake implements IMessageable {
         }
 
         return false;
-    }
-
-    public function send(message:String):Message {
-        return null;
     }
 }

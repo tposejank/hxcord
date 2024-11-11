@@ -1,4 +1,4 @@
-package discord.types;
+package discord;
 
 /**
  * An ABC that details the common operations on a Discord model.

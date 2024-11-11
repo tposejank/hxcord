@@ -534,7 +534,7 @@ class Permissions {
      * A factory method that creates a `Permissions` with all permissions set to false.
      */
     public static function none():Permissions {
-        return fromValue(0);
+        return fromValue("0".i64());
     }
 
     /**

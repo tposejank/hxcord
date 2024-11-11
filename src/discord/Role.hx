@@ -4,7 +4,7 @@ import haxe.exceptions.NotImplementedException;
 import haxe.Int64;
 import haxe.Exception;
 import haxe.display.Display.Package;
-import discord.types.Snowflake;
+import discord.Snowflake;
 import discord.State.ConnectionState;
 
 using discord.utils.MapUtils;

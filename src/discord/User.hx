@@ -1,14 +1,13 @@
 package discord;
 
+import discord.Channel.MessageParameters;
+import discord.Channel.Messageable;
 import haxe.exceptions.NotImplementedException;
 import haxe.Int64;
 import discord.State.ConnectionState;
 import discord.Colour;
 import discord.Utils;
 import haxe.io.Bytes;
-import discord.types.OneOfTwo;
-import discord.types.IMessageable;
-import discord.types.Snowflake;
 import discord.Member;
 
 using discord.utils.MapUtils;
@@ -45,7 +44,7 @@ typedef UserPayload = {
     @:optional var accent_color:Int;
 }
 
-class BaseUser extends Snowflake {
+class BaseUser extends Messageable {
     /**
      * The user's username.
      */
@@ -71,8 +70,6 @@ class BaseUser extends Snowflake {
     public var _accent_colour:Null<Int>;
     public var _public_flags:Null<Int>;
     public var _avatar_decoration_data:AvatarDecorationData;
-
-    public var _state:ConnectionState;
 
     /**
      * Returns the user's display name.
@@ -270,7 +267,7 @@ class BaseUser extends Snowflake {
     }
 }
 
-class User extends BaseUser implements IMessageable {
+class User extends BaseUser {
     // TBD
     // DMChannel
     /**
@@ -288,16 +285,16 @@ class User extends BaseUser implements IMessageable {
     public var mutual_guilds(get, never):Array<Guild>;
 
     // TBD
-    /**
-     * Send a Direct Message to this user.
-     * @param message 
-     */
-    public function send(message:String):Message { // Message inbound, message outbound
-        return null;
-    }
+    // /**
+    //  * Send a Direct Message to this user.
+    //  * @param message 
+    //  */
+    // public function send(params:MessageParameters):Message { // Message inbound, message outbound
+    //     return null;
+    // }
 
     // DMChannel
-    public function _get_channel():Dynamic {
+    override public function _get_channel():Messageable {
         var ch = create_dm();
         return ch;
     }
@@ -387,7 +384,7 @@ class ClientUser extends User {
         // TBD
     }
 
-    override public function send(message:String):Message {
+    override public function send(params:MessageParameters):Message {
         throw new NotImplementedException('You cannot message yourself');
     }
 

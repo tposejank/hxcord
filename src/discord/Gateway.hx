@@ -1,6 +1,6 @@
 package discord;
 
-import haxe.Exception;
+import discord.utils.errors.GatewayErrors;
 import discord.Flags.Intents;
 import discord.utils.events.GatewayEvents;
 import discord.log.Log;
@@ -73,31 +73,31 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * The sequence number of the events sent & received via the gateway.
      */
-    private var _lastSequenceNum:Null<Int>;
+    private var _last_sequence_num:Null<Int>;
 
-    private var _sessionID:String = null;
+    private var _session_id:String = null;
 
     /**
      * The resume URL, received in the `READY` event (Opcode 0)
      */
-    public var resumeURL:String = null;
+    public var resume_url:String = null;
 
     /**
      * The ammount of time to pass between each Heartbeat
      * 
      * Received in the `HELLO` event (Opcode 10) 
      */
-    public var heartbeatDelay:Int = 0; // MS
+    public var heartbeat_delay:Int = 0; // MS
 
     /**
      * Unix timestamp of the last heartbeat (1) sent.
      */
-    private var lastHeartbeatSent:Float = 0;
+    public var last_heartbeat_sent:Float = 0;
 
     /**
      * Unix timestamp of the last heartbeat (11) received.
      */
-    public var lastHeartbeatAckReceived:Float = 0;
+    public var last_heartbeat_ack_received:Float = 0;
 
     /**
      * Measures latency between a HEARTBEAT and a HEARTBEAT_ACK in seconds.
@@ -113,7 +113,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     public var compress_connection:Bool = true;
 
-    private var _weSentZeroToDiscord:Bool = false;
+    private var zero_sent:Bool = false;
+    private var identified:Bool = false;
 
     /**
      * Initialize the Gateway
@@ -132,6 +133,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
         #if sys
         sys.ssl.Socket.DEFAULT_VERIFY_CERT = false;
         #end
+
+        identified = false;
 
         if (ws != null) {
             this.dispatchEvent(new GatewayReset());
@@ -179,11 +182,11 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
             switch (daType) {
                 case StrMessage(content):
-                    haxe.EntryPoint.runInMainThread(onMessage.bind(content));
+                    haxe.EntryPoint.runInMainThread(on_message.bind(content));
                 case BytesMessage(content):
                     // haxe.zip automatically uses zlib-flush
                     haxe.EntryPoint.runInMainThread(
-                        onMessage
+                        on_message
                         .bind(haxe.zip.Uncompress.run(
                             content.readAllAvailableBytes()
                         ).toString())
@@ -203,7 +206,9 @@ class Gateway extends discord.utils.events.EventDispatcher {
             Log.error('[HAXEWS] WebSocket closed with code $code');
             Log.error('[DISCRD] $message');
 
-            handleDisconnectCode(code, message);
+            sys.io.File.saveContent('disconnects.log', sys.io.File.getContent('disconnects.log') + '\nDISCONNECT OCCURRED\nTime: ${Sys.time()}\nDate: ${Date.now().toString()}\nMessage: ${message}\nCode: ${code}\n-------------');
+
+            handle_disconnect_code(code, message);
         }
 
         #if sys
@@ -220,56 +225,101 @@ class Gateway extends discord.utils.events.EventDispatcher {
         }
     }
 
-    public function handleDisconnectCode(code:Int, message:String):Void {
-        var shouldNotTryToReconnect:Bool = false; // should a reconnection not be attempted?
+    /**
+     * According to https://github.com/discord/discord-api-docs/pull/7172#issue-2546244404
+     * `4001`, `4003`, `4004`, `4005`, `4007`, `4009`, `4010`, `4011`, `4012`, `4013` and `4014` CANNOT be resumed.
+     */
+    public function handle_disconnect_code(code:Int, message:String):Void {
+        // should a reconnection not be attempted?
+        var should_not_reconnect:Bool = false;
+        // should resume be invalidated?
+        var should_invalidate_resume:Bool = false;
+
         switch (code) {
             case 4000:
                 Log.error('[HXCORD] Discord gave us an unknown error.');
             case 4001:
                 Log.error('[HXCORD] We sent an invalid opcode.');
+                should_invalidate_resume = true;
             case 4002:
                 Log.error('[HXCORD] Discord couldn\'t decode our payload.');
             case 4003:
-                if (_weSentZeroToDiscord) {
-                    Log.error('[HXCORD] We sent a payload before identifying.');
-                } else { 
+                if (zero_sent && !identified) 
+                    Log.error('[HXCORD] Payload sent before identifying.');
+                else 
                     Log.error('[HXCORD] The session has been invalidated.');
-                }
+
+                should_invalidate_resume = true;
             case 4004:
-                throw 'Please provide a valid token.';
-                shouldNotTryToReconnect = true; 
+                throw new GatewayUnauthorized('Please provide a valid token.');
+                should_not_reconnect = true;
+                should_invalidate_resume = true;
             case 4005:
                 Log.error('[HXCORD] More than one Identify payload sent.');
+                should_invalidate_resume = true;
             case 4007:
                 Log.error('[HXCORD] Mismatch in sequence when resuming.');
+                should_invalidate_resume = true;
             case 4008:
                 Log.error('[HXCORD] Rate limit encountered.');
             case 4009:
                 Log.error('[HXCORD] The session timed out.');
+                should_invalidate_resume = true;
             case 4010:
-                throw 'Invalid shard given when Identifying.';
-                shouldNotTryToReconnect = true; 
+                throw new GatewayShardRequired('Invalid shard given when Identifying.');
+                should_not_reconnect = true; 
+                should_invalidate_resume = true;
             case 4011:
-                throw 'You are required to shard your connection in order to connect.';
-                shouldNotTryToReconnect = true; 
+                throw new GatewayShardRequired('You are required to shard your connection in order to connect.');
+                should_not_reconnect = true; 
+                should_invalidate_resume = true;
             case 4012:
-                throw 'Invalid API version given to Gateway.';
-                shouldNotTryToReconnect = true; 
+                throw new GatewayInvalidParameters('Invalid API version given to Gateway.');
+                should_not_reconnect = true; 
+                should_invalidate_resume = true;
             case 4013:
                 throw 'Invalid intents.';
-                shouldNotTryToReconnect = true; 
+                should_not_reconnect = true; 
+                should_invalidate_resume = true;
             case 4014:
                 Log.error('[HXCORD] Please apply for the intents ${intents.value} if your bot has more than 100 guilds.');
                 Log.error('[HXCORD] If it is not in +100 guilds, please enable it in the Developer Portal:');
                 Log.error('[HXCORD] https://discord.com/developers/docs/topics/gateway#privileged-intents');
-                throw 'Privileged intents ${intents.value} provided, these intents are disallowed.';
-                shouldNotTryToReconnect = true; 
+                should_not_reconnect = true;
+                should_invalidate_resume = true;
+                throw new GatewayUnauthorized('Privileged intents ${intents.value} provided, these intents are disallowed.');
         }
 
-        if (!shouldNotTryToReconnect) {
-            Log.info('Reconnection started and in progress');
-            tryReconnection();
+        if (should_invalidate_resume) {
+            invalidate_resume(); 
         }
+
+        if (!should_not_reconnect) {
+            Log.info('Reconnection started and in progress');
+            try_reconnection();
+        }
+    }
+
+    /**
+     * Deletes all resume credentials and forces the client to resume when possible.
+     * 
+     * This will NOT close the connection, but rather have the client not resume the next time a connection is opened (and is resumable).
+     */
+    public function invalidate_resume():Void {
+        this.resume_url = null;
+        this._session_id = null;
+        // start a new session
+        this._last_sequence_num = null;
+    }
+
+    private function reinitialize_hb_timer():Void {
+        haxe.EntryPoint.runInMainThread(()->{
+            if (hb_timer != null) hb_timer.stop();
+            hb_timer = new haxe.Timer(heartbeat_delay);
+            hb_timer.run = () -> {
+                heartbeat();
+            }
+        });
     }
 
     /**
@@ -282,7 +332,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
      * - `HEARTBEAT_ACK`: Sent in response to receiving a heartbeat to acknowledge that it has been received.
      * @param msg Message (JSON content) sent by the Gateway
      */
-    private function onMessage(msg:String) {
+    private function on_message(msg:String) {
         final json:Dynamic = Json.parse(msg);
 
         final data:Payload =
@@ -299,78 +349,60 @@ class Gateway extends discord.utils.events.EventDispatcher {
         switch(data.op)
         {
             case HELLO:  
-                heartbeatDelay = data.d.heartbeat_interval;
+                heartbeat_delay = data.d.heartbeat_interval;
 
-                // The App just started
-                if (resumeURL == null) {
+                // No resume credentials available
+                if (resume_url == null) {
                     identify();
                     heartbeat();
-
-                    if (hb_timer != null) hb_timer.stop();
-                    hb_timer = new haxe.Timer(heartbeatDelay);
-                    hb_timer.run = () -> {
-                        heartbeat();
-                    }
+                    reinitialize_hb_timer();
                 }
                 else // The app is resuming from a Resume event
                 {
                     Log.info("Trying to resume from previous session");
                     resume();
                     heartbeat();
-
-                    haxe.EntryPoint.runInMainThread(()->{
-                        if (hb_timer != null) hb_timer.stop();
-                        hb_timer = new haxe.Timer(heartbeatDelay);
-                        hb_timer.run = () -> {
-                            heartbeat();
-                        }
-                    });
+                    reinitialize_hb_timer();
                 }
 
             case HEARTBEAT_ACK:
                 // measure latency
-                lastHeartbeatAckReceived = Sys.time();
+                last_heartbeat_ack_received = Sys.time();
 
             case INVALID_SESSION:
                 // The invalid session is resumable!!
                 if (data.d == true) {
                     // try to resume
-                    Log.warn("Invalid session received but could be resumed.");
+                    Log.warn("Invalid session received but resumable.");
                 } else {
                     Log.warn("Re-identifying due to invalid session");
                     // do NOT try to resume here
-                    resumeURL = null;
-                    // start a new session
-                    _lastSequenceNum = null;
+                    invalidate_resume();
                 }
-                tryReconnection();
+                try_reconnection();
 
             case RECONNECT:
                 Log.info("Reconnect requested.");
-                tryReconnection();
+                // do not let the server close on us
+                try_reconnection(true);
 
             case DISPATCH:
-                _lastSequenceNum = data.s;
+                _last_sequence_num = data.s;
 
                 switch (data.t)
                 {
                     case "READY":
-                        _sessionID = data.d.session_id;
-                        resumeURL = data.d.resume_gateway_url;
+                        _session_id = data.d.session_id;
+                        resume_url = data.d.resume_gateway_url;
+                        identified = true;
                 }
             
             case HEARTBEAT:
                 Log.warn('Discord wants a heartbeat');
                 heartbeat();
 
-                Log.debug('Reinitializing the heartbeat timer to be safe');
-                haxe.EntryPoint.runInMainThread(()->{
-                    if (hb_timer != null) hb_timer.stop();
-                    hb_timer = new haxe.Timer(heartbeatDelay);
-                    hb_timer.run = () -> {
-                        heartbeat();
-                    }
-                });
+                Log.debug('Reinitializing the heartbeat timer');
+                reinitialize_hb_timer();
 
             default:
                 trace(data);
@@ -405,8 +437,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
     {
         var payload:Payload = new Payload(RESUME, {
             token: this._token,
-            session_id: this._sessionID,
-            seq: this._lastSequenceNum
+            session_id: this._session_id,
+            seq: this._last_sequence_num
         });
 
         send(payload.toString());
@@ -415,14 +447,16 @@ class Gateway extends discord.utils.events.EventDispatcher {
     /**
      * Tries reconnecting to the Gateway
      */
-    private function tryReconnection()
+    private function try_reconnection(skip_wait:Bool = false)
     {
-        Log.debug('Waiting 0.5s to handle the reconnection');
-        Sys.sleep(0.5); // reduce spam
+        if (!skip_wait) {
+            Log.debug('Waiting 0.5s to handle the reconnection');
+            Sys.sleep(0.5); // reduce spam
+        }
 
         try 
         {
-            if (resumeURL == null)
+            if (resume_url == null)
                 initializeWebSocket();
             else 
                 reconnect();
@@ -430,42 +464,42 @@ class Gateway extends discord.utils.events.EventDispatcher {
         catch (ex)
         {
             shutDown();
-            throw new Exception('${ex}, Cannot reconnect');
+            throw new GatewayCantReconnect('${ex}, Cannot reconnect');
         }
     }
 
     // Reconnect / Resume the connection to the gateway in case we get disconnected from it
     private function reconnect():Void
     {
-        initializeWebSocket('${resumeURL}/?v=10&encoding=json');
+        initializeWebSocket('${resume_url}/?v=10&encoding=json');
     }
 
     // Heartbeat, also known as the Keep-Alive
     private function heartbeat()
     {
-        var payload:Payload = new Payload(HEARTBEAT, null, _lastSequenceNum);
+        var payload:Payload = new Payload(HEARTBEAT, null, _last_sequence_num);
         if (ws.state == Closed)
         {
             Log.error('Cannot send a heartbeat when the Gateway is closed!');
             return;
         }
 
-        lastHeartbeatSent = Sys.time();
+        last_heartbeat_sent = Sys.time();
         send(payload.toString());
     }
 
     private function send(data:String)
     {
-        var opcodeSent:Int = Json.parse(data)?.op ?? -1;
+        var opcode_sent:Int = Json.parse(data)?.op ?? -1;
 
-        if (opcodeSent == Opcodes.DISPATCH) _weSentZeroToDiscord = true;
+        if (opcode_sent == Opcodes.DISPATCH) zero_sent = true;
 
         if (!initialized) {
             Log.error('WebSocket not initialized (Client-Denied Send)');
             return;
         }
 
-        Log.debug('Sending ${opcodeSent}');
+        Log.debug('Sending ${opcode_sent}');
 
         Log.test(data);
 
@@ -473,7 +507,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     function get_latency():Float {
-        return lastHeartbeatAckReceived - lastHeartbeatSent;
+        return last_heartbeat_ack_received - last_heartbeat_sent;
     }
 }
 

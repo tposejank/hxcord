@@ -1,67 +1,232 @@
 package discord;
 
+import haxe.EntryPoint;
+import haxe.MainLoop;
+import sys.thread.Thread;
+import discord.utils.DateTimeDelta;
+import haxe.io.Bytes;
+import haxe.io.BytesOutput;
+import discord.utils.errors.HTTPErrors;
 import discord.log.Log;
 import haxe.Exception;
 
+using discord.utils.MultipartUtils;
+using discord.utils.HttpUtils;
+using discord.utils.MapUtils;
+
+class MultipartData {
+    /**
+     * The JSON data to be sent
+     */
+    public var payload:Dynamic;
+
+    /**
+     * Files?
+     */
+    public var files:Array<Bytes>;
+
+    public function new(payload:Dynamic, files:Array<Bytes>) {
+        this.payload = payload;
+        this.files = files;
+    }
+
+    public function get_form_data():BytesOutput {
+        var output:BytesOutput = new BytesOutput();
+        output.boundary();
+        output.newline();
+        output.add('Content-Disposition: form-data; name="payload_json"');
+        output.newline();
+        output.add('Content-Type: application/json');
+        output.newline();
+        output.newline();
+        output.add(haxe.Json.stringify(payload));
+        if (this.files.length < 1)
+            output.end();
+        else { // create attachments
+            for (idx => file in this.files) {
+                // lets assume for now each file is bytes
+                output.newline();
+                output.boundary();
+                output.newline();
+                output.add('Content-Disposition: form-data; name="files[${idx}]"; filename="file_test_${idx}.jpg"');
+                output.newline();
+                output.add('Content-Type: ${Utils.getMimeTypeForImage(file)}');
+                output.newline();
+                output.newline();
+                output.write(file);
+            }
+            output.newline();
+            output.end();
+        }
+        return output;
+    }
+}
+
+typedef RouteMajorParameters = {
+    var ?channel_id:String;
+    var ?guild_id:String;
+    var ?webhook_id:String;
+    var ?webhook_token:String;
+}
+
+/**
+ * Represents a path to Discord's REST API.
+ */
 class Route {
     public var BASE = 'https://discord.com/api/v10'; // no v9 support!
 
     public var method:String = 'GET';
     public var path:String;
-
+    public var metadata:String;
     public var url:String;
 
-    public function new(method:String, path:String) {
+    public var channel_id:String;
+    public var guild_id:String;
+    public var webhook_id:String;
+    public var webhook_token:String;
+
+    public function new(method:String, path:String, ?metadata:String, ?parameters:RouteMajorParameters) {
         this.method = method;
         this.path = path;
+        this.metadata = metadata;
         this.url = BASE + path;
+
+        this.channel_id = parameters?.channel_id;
+        this.guild_id = parameters?.guild_id;
+        this.webhook_id = parameters?.webhook_id;
+        this.webhook_token = parameters?.webhook_token;
+    }
+
+    public var key(get, never):String;
+    function get_key():String {
+        if (metadata != null)
+            return '${method} ${path}:${metadata}';
+        return '${method} ${path}';
+    }
+
+    public var major_parameters(get, never):String;
+    function get_major_parameters():String {
+        var param_arr = [];
+        for (p in [this.channel_id, this.guild_id, this.webhook_id, this.webhook_token]) {
+            if (p != null) param_arr.push(p);
+        }
+        return param_arr.join('+');
     }
 }
 
-class HTTPException extends Exception {
-    public var data:String;
-    public var status:Null<Int>;
-    public var should_parse:Bool;
-    public function new(data:String, msg:String = 'HTTPException', status:Null<Int>, try_parse:Bool = true) {
-        super(msg + ' (${status})');
-        this.data = data;
-        this.status = status;
-        this.should_parse = try_parse;
-    }
-}
+/**
+ * Utility class to handle Ratelimits.
+ * 
+ * When 
+ */
+class Ratelimit {
+    /**
+     * How many requests are possible to create made before the ratelimit is hit.
+     */
+    public var limit:Int;
+    /**
+     * How many requests are left until the ratelimit is hit.
+     */
+    public var remaining:Int;
+    /**
+     * How many requests have been made.
+     */
+    public var outgoing:Int;
+    /**
+     * How many requests are made after the ratelimit was hit.
+     */
+    public var past_due:Int;
+    /**
+     * How much time to wait between rate limit resets
+     */
+    public var reset_after:Float;
 
-class Forbidden extends HTTPException {
-    public function new(data:String, status:Null<Int>, try_parse:Bool = true) {
-        super(data, "Forbidden", status, try_parse);
-    }
-}
+    private var timerStarted:Bool = false;
 
-class NotFound extends HTTPException {
-    public function new(data:String, status:Null<Int>, try_parse:Bool = true) {
-        super(data, "NotFound", status, try_parse);
+    public function new() {
+        this.limit = 1;
+        this.remaining = this.limit;
+        this.past_due = 0;
+        this.outgoing = 0;
     }
-}
 
-class DiscordServerError extends HTTPException {
-    public function new(data:String, status:Null<Int>, try_parse:Bool = true) {
-        super(data, "DiscordServerError", status, try_parse);
+    public function update(request:haxe.Http) {
+        this.limit = Std.parseInt(request.get_header_safe('X-Ratelimit-Limit'));
+        this.remaining = Std.int(Math.min(Std.parseInt(request.get_header_safe('X-Ratelimit-Remaining')), limit - outgoing));
+        
+        var r_after = request.get_header_safe('X-Ratelimit-Reset-After');
+        if (r_after == null) {
+            var now = Sys.time();
+            var reset = Std.parseFloat(request.get_header_safe('X-Ratelimit-Reset'));
+            this.reset_after = reset - now;
+        } else {
+            this.reset_after = Std.parseFloat(r_after);
+        }
+        trace('The ratelimit has been updated. Received:');
+        trace('limit=${this.limit}');
+        trace('remaining=${this.remaining}');
+        trace('reset_after=${this.reset_after}');
     }
-}
 
-class Unauthorized extends HTTPException {
-    public function new(data:String, status:Null<Int>, try_parse:Bool = true) {
-        super(data, "Unauthorized", status, try_parse);
+    public function get_retroactive_wait_time():Float {
+        outgoing += 1;
+        remaining = limit - outgoing;
+
+        if (remaining > 0) {
+            return 0; // No need to wait if we're within limit
+        } else {
+            past_due += 1;
+            Log.info('This bucket is retroactively ratelimiting any requests. Currently stocking ${past_due}');
+            
+            // Start reset timer only once when we exceed the rate limit
+            if (!timerStarted) {
+                timerStarted = true;
+                Log.warn('Reset timer started for ${this.reset_after * 1000}ms');
+                EntryPoint.runInMainThread(() -> {
+                    haxe.Timer.delay(() -> {
+                        reset();
+                    }, Std.int(this.reset_after * 1000));
+
+                    var decrease_past_due_tmr = new haxe.Timer(Std.int(this.reset_after * 1000));
+                    decrease_past_due_tmr.run = () -> {
+                        past_due -= 1;
+                        outgoing = past_due;
+                        remaining = limit - outgoing;
+                        if (past_due <= 0) {
+                            decrease_past_due_tmr.stop();
+                            past_due = 0;
+                        }
+                    }
+                });
+            }
+
+            return Math.min(reset_after * past_due, reset_after * limit); // Return wait time based on how far we're past the limit
+        }
+    }
+
+    public function reset():Void {
+        // Reset counters after timer finishes
+        outgoing = past_due;
+        remaining = limit - outgoing;
+        past_due = 0;
+        timerStarted = false; // Allow the timer to start again if needed
     }
 }
 
 class HTTPClient {
     public var token:String;
 
+    public var globalRatelimit:Ratelimit;
+
+    private var _bucket_hashes:Map<String, String> = new Map<String, String>();
+    private var _buckets:Map<String, Ratelimit> = new Map<String, Ratelimit>();
+
     public function new(token:String) {
         this.token = token;
+        globalRatelimit = new Ratelimit();
     }
 
-    private function _setup_request(route:Route, headers:Map<String, String>, ?data:String):haxe.Http {
+    private function _setup_request(route:Route, headers:Map<String, String>, ?data:String, ?form:MultipartData):haxe.Http {
         var req = new haxe.Http(route.url);
 
         for (key => header in headers) {
@@ -70,19 +235,47 @@ class HTTPClient {
 
         if (data != null) req.setPostData(data);
 
+        if (form != null) {
+            var form_bytes = form.get_form_data().getBytes();
+            trace(form_bytes.toString());
+            req.setPostBytes(form_bytes);
+        }
+
         return req;
     }
 
-    private function _request_api(route:Route, ?data:String, ?reason:String, ?callback:String->Void) {
+    private function get_bucket(key:String):Ratelimit {
+        var bucket:Ratelimit = _buckets.get(key);
+        if (bucket == null) {
+            bucket = new Ratelimit();
+            _buckets.set(key, bucket);
+        }
+        return bucket;
+    }
+
+    private function _request_api(route:Route, ?data:String, ?reason:String, ?form:MultipartData, ?callback:String->Void) {
         var tries:Int = 0;
         var max_tries:Int = 5;
+        
+        var route_key = route.key;
+        var bucket_hash:String = null;
+        var key:String = null;
+        if (this._bucket_hashes.exists(route_key)) {
+            bucket_hash = this._bucket_hashes.get(route_key);
+            key = '${bucket_hash}:${route.major_parameters}';
+        } else {
+            key = '${route_key}:${route.major_parameters}';
+        }
+
+        var ratelimit = get_bucket(key);
         
         // setup request headers
         var headers:Map<String, String> = new Map<String, String>();
         if (this.token != null) headers.set('Authorization', 'Bot ' + this.token);
         if (data != null) headers.set('Content-Type', 'application/json');
+        if (form != null) headers.set('Content-Type', 'multipart/form-data; boundary=hxcordboundary');
         // TBD: Url string safety // I think StringTools has that
-        if (reason != null) headers.set('X-Audit-Log-Reason', reason);
+        if (reason != null) headers.set('X-Audit-Log-Reason', StringTools.urlEncode(reason));
 
         var target = #if cpp "CPP" #elseif neko "Neko" #elseif hl "HashLink" #else "Unknown Haxe Target" #end ;
         var device = "Haxe - " + #if windows "Windows" #elseif macos "MacOS" #elseif linux "Linux" #else "Unknown Device" #end ;
@@ -98,7 +291,7 @@ class HTTPClient {
         // wait for status code
         var on_status:Int->Void = (code:Int) -> {
             // trace('status ${code}');
-            responseCode = 500;
+            responseCode = code;
         }
 
         // when an error occurs 
@@ -106,11 +299,15 @@ class HTTPClient {
         // status is less than 200 or over 399
         var on_err:String->Void = (error:String) -> {
             // response is available at this moment
-            trace('${error}');
+            Log.error('Got Error: ${error}');
             response = __response.getBytes();
         }
 
         // TBD: ratelimit handling
+
+        var wait_secs = ratelimit.get_retroactive_wait_time();
+        Log.info('${route.method} ${route.url} was told to wait ${wait_secs}s');
+        Sys.sleep(wait_secs);
 
         // send the request in a loop retrying if a fail occurs
         for (i in 0...max_tries) {
@@ -119,7 +316,7 @@ class HTTPClient {
             __response = new haxe.io.BytesOutput();
 
             // create a new request
-            var http_request = _setup_request(route, headers, data);
+            var http_request = _setup_request(route, headers, data, form);
             http_request.onError = on_err;
             http_request.onStatus = on_status;
             // investigate
@@ -130,10 +327,53 @@ class HTTPClient {
             response = __response.getBytes();
             // get the response data as string
             var response_str = response.toString();
+
+            var discord_hash:String = http_request.get_header_safe('X-Ratelimit-Bucket');
+            var has_ratelimit_headers = http_request.header_exists_safe('X-Ratelimit-Remaining');
+            if (discord_hash != null) {
+                if (bucket_hash != discord_hash) {
+                    if (bucket_hash != null) {
+                        Log.debug('The route ${route_key} has changed hashes: ${bucket_hash} -> ${discord_hash}');
+                        this._bucket_hashes.set(route_key, discord_hash);
+                        var recalculated_key = discord_hash + route.major_parameters;
+                        this._buckets.set(recalculated_key, ratelimit);
+                        this._buckets.pop(key);
+                    } else if (!_bucket_hashes.exists(route_key)) {
+                        Log.debug('${route.key} has found its initial rate limit bucket hash (${discord_hash})');
+                        this._bucket_hashes.set(route_key, discord_hash);
+                        this._buckets.set(discord_hash + route.major_parameters, ratelimit);
+                    }
+                }   
+            }
+
+            if (has_ratelimit_headers) {
+                if (responseCode != 429) {
+                    ratelimit.update(http_request);
+                }
+            }
+
             // request successful, return the data
             if ((300 > responseCode) && (responseCode >= 200)) {
                 if (callback != null) callback(response_str);
                 return;
+            }
+
+            if (responseCode == 429) {
+                if (!http_request.header_exists_safe('Via')) {
+                    throw new HTTPException(response_str, "HTTPException", responseCode);
+                }
+
+                if (ratelimit.remaining > 0) {
+                    // Log.info('Subratelimit hit?');
+                }
+
+                var ratelimit_data = haxe.Json.parse(response_str);
+                var retry_after:Float = ratelimit_data.retry_after;
+                Log.error(ratelimit_data.message + ' Sleeping for ${retry_after}s.');
+                Sys.sleep(retry_after);
+
+                Log.info('Ratelimit sleep is complete. Retrying this request.');
+                continue;
             }
             
             // retry the request because of server error
@@ -168,12 +408,12 @@ class HTTPClient {
         throw new DiscordServerError("Could not handle the response", null, false);
     }
 
-    public function request(route:Route, ?data:String, ?reason:String):String {
+    public function request(route:Route, ?data:String, ?reason:String, ?form:MultipartData):Dynamic {
         var is_request_complete:Bool = false;
         var request_response:String = null;
 
         try {
-            this._request_api(route, data, reason, (_response) -> {
+            this._request_api(route, data, reason, form, (_response) -> {
                 is_request_complete = true;
                 request_response = _response;
             });
@@ -182,11 +422,42 @@ class HTTPClient {
             throw e;
         }
 
-        return request_response;
+        if (request_response != null) {
+            try {
+                return haxe.Json.parse(request_response);
+            } catch(e) {
+                return request_response;
+            }
+        }
+
+        return null;
+    }
+
+    public function login():Dynamic {
+        var data:Dynamic = null;
+        try {
+            data = request(new Route('GET', '/users/@me'));
+        } catch (e:HTTPException) {
+            if (e.status == 401) {
+                Log.error('Invalid token was passed.');
+                throw new HTTPCantLogin('Invalid token was passed.');
+            }
+        }
+
+        return data;
     }
 
     public function delete_message(channel_id:String, message_id:String, reason:String = '') {
-        return this.request(new Route('DELETE', '/channels/${channel_id}/messages/${message_id}'), null, reason);
+        var difference = Sys.time() - (Utils.snowflake_time(message_id).getTime() / 1000);
+        var meta = null;
+        if (difference <= new DateTimeDelta(0, 0, 0, 10).toSeconds())
+            meta = 'sub-10-seconds';
+        if (difference >= new DateTimeDelta(14).toSeconds())
+            meta = 'older-than-two-weeks';
+
+        return this.request(new Route('DELETE', '/channels/${channel_id}/messages/${message_id}', meta, {
+            channel_id: channel_id
+        }), null, reason);
     }
 
     public function bulk_channel_update(guild_id:String, data:String, reason:String = '') {
@@ -195,5 +466,13 @@ class HTTPClient {
 
     public function delete_channel(channel_id:String, reason:String = '') {
         return this.request(new Route('DELETE', '/channels/${channel_id}'), null, reason);
+    }
+
+    public function send_message(channel_id:String, params:MultipartData) {
+        var route = new Route('POST', '/channels/${channel_id}/messages');
+        if (params.files.length > 0)
+            return this.request(route, null, null, params);
+        else 
+            return this.request(route, haxe.Json.stringify(params.payload));
     }
 }

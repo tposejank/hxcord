@@ -1,7 +1,7 @@
 package discord;
 
 import discord.State.ConnectionState;
-import discord.types.Snowflake;
+import discord.Snowflake;
 import discord.Member.MemberPayload;
 import discord.Member.UserWithMemberPayload;
 import discord.User.UserPayload;

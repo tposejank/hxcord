@@ -1,11 +1,11 @@
 package discord;
 
-import discord.types.OneOfTwo;
+import discord.utils.errors.Errors.TypeError;
+import discord.Permissions.Permission;
 import haxe.ValueException;
 import haxe.exceptions.NotImplementedException;
 import discord.State.ConnectionState;
-import discord.types.Snowflake;
-import discord.types.IMessageable;
+import discord.Snowflake;
 
 typedef BaseChannelPayload = {
     var id:String;
@@ -109,7 +109,7 @@ typedef GuildChannelPayload = {
     >MediaChannelPayload,
 }
 
-class GuildChannel extends Snowflake implements IMessageable { // abc
+class GuildChannel extends Messageable { // abc
     /**
      * The channel name.
      */
@@ -128,8 +128,6 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
 
     public var category_id:String;
 
-    public var _state:ConnectionState;
-
     public var _overwrites:Array<Dynamic>;
 
     public var _sorting_bucket(get, never):Int;
@@ -143,10 +141,6 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
     }
 
     public function toString():String return this.name;
-
-    public function send(message:String):Message {
-        return null;
-    }
 
     public function move(position:Int, parent_id:String, lock_permissions:Bool = false, reason:String = '') {
         if (position < 0) throw new ValueException("Channel position cannot be negative");
@@ -235,14 +229,92 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
     }
 
     public function permissions_for(obj:Dynamic):Permissions {
-        if (guild.owner_id == obj.id) {
-            return Permissions.all();
+        if (obj is Snowflake) {
+            if (this.guild.owner_id == cast(obj, Snowflake).id) {
+                return Permissions.all();
+            }
         }
-        
-        // bro wheres unions
-        // var default_role = 
 
-        return null;
+        var default_role = this.guild.default_role;
+        if (default_role != null) {
+            if (this._state.self_id == obj.id) 
+                return Permissions._user_installed_permissions(true);
+            else 
+                return Permissions.none();
+        }
+
+        var base = Permissions.fromValue(default_role.permissions.value);
+        
+        if (obj is Role) {
+            var _obj = cast(obj, Role);
+            base.value |= _obj._permissions;
+
+            if (base.administrator)
+                return Permissions.all();
+
+            // try:
+            //     maybe_everyone = self._overwrites[0]
+            //     if maybe_everyone.id == self.guild.id:
+            //         base.handle_overwrite(allow=maybe_everyone.allow, deny=maybe_everyone.deny)
+            // except IndexError:
+            //     pass
+
+            if (_obj.is_default())
+                return base;
+
+            // overwrite = utils.get(self._overwrites, type=_Overwrites.ROLE, id=obj.id)
+            // if overwrite is not None:
+            //     base.handle_overwrite(overwrite.allow, overwrite.deny)
+            
+        } else if (obj is Member) {
+            var _obj = cast(obj, Member);
+
+            var roles = _obj._roles;
+            for (role_id in roles) {
+                var role = this.guild.get_role(role_id);
+                if (role != null) {
+                    base.value |= role._permissions;
+                }
+            }
+
+            if (base.administrator)
+                return Permissions.all();
+
+            // so much code abt overwrites 
+
+            // # Apply @everyone allow/deny first since it's special
+            // try:
+            //     maybe_everyone = self._overwrites[0]
+            //     if maybe_everyone.id == self.guild.id:
+            //         base.handle_overwrite(allow=maybe_everyone.allow, deny=maybe_everyone.deny)
+            //         remaining_overwrites = self._overwrites[1:]
+            //     else:
+            //         remaining_overwrites = self._overwrites
+            // except IndexError:
+            //     remaining_overwrites = self._overwrites
+    
+            // denies = 0
+            // allows = 0
+    
+            // # Apply channel specific role permission overwrites
+            // for overwrite in remaining_overwrites:
+            //     if overwrite.is_role() and roles.has(overwrite.id):
+            //         denies |= overwrite.deny
+            //         allows |= overwrite.allow
+    
+            // base.handle_overwrite(allow=allows, deny=denies)
+    
+            // # Apply member specific permission overwrites
+            // for overwrite in remaining_overwrites:
+            //     if overwrite.is_member() and overwrite.id == obj.id:
+            //         base.handle_overwrite(allow=overwrite.allow, deny=overwrite.deny)
+            //         break
+
+            if (_obj.is_timed_out())
+                base.value &= Permissions._timeout_mask();
+        }
+
+        return base;
     }
 
     /**
@@ -258,5 +330,45 @@ class GuildChannel extends Snowflake implements IMessageable { // abc
 
     public function clone(name:String, reason:String) {
         throw new NotImplementedException();
+    }
+}
+
+@:structInit
+@:publicFields
+class MessageParameters {
+    var content:String = null;
+    var tts:Bool = false;
+    var embeds:Array<Dynamic> = null;
+    var files:Array<Dynamic> = null;
+    var stickers:Array<Dynamic> = null; //TBD: _StickerTag // ID property, inherits AssetMixin // TBD: AssetMixin
+    var delete_after:Null<Float> = null; // why ?
+    var nonce:String = null;
+    // var allowed_mentions: // TBD: find what the hell this is for and how to use it
+    // var reference // MessageReference
+    var mention_author:Null<Bool> = null;
+    // var view
+    var suppress_embeds:Bool = false;
+    var silent:Bool = false;
+    // var poll:
+}
+
+class Messageable extends Snowflake {
+    public var _state:ConnectionState;
+
+    public function _get_channel():Messageable {
+        throw new NotImplementedException();
+    }
+
+    public function send(params:MessageParameters):Message {
+        if (params.content == null && params.embeds == null) {
+            throw new TypeError('Either content or embeds must be null, not both');
+        }
+
+        var channel = _get_channel();
+        var state = _state;
+
+        
+
+        return null;
     }
 }

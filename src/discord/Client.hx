@@ -39,7 +39,7 @@ class Client extends EventDispatcher {
     public function new(token:String, intents:Intents) {
         super();
 
-        Log.init(LogLevel.TEST);
+        Log.init(LogLevel.DEBUG);
 
         this.token = token;
         this.intents = intents;
@@ -56,6 +56,7 @@ class Client extends EventDispatcher {
             });
         }, false, 1);
         #else
+        Log.warn('NO_TRUE_ASYNC is enabled; Asynchronous operations will be synchronous.');
         ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, state.on_dispatch, false, 1);
         #end
     }
@@ -83,6 +84,9 @@ class Client extends EventDispatcher {
      * begin operating the Client.
      */
     public function run():Void {
+        var client_data:Dynamic = http.login();
+        this.state.user = new ClientUser(this.state, client_data);
+
         ws.initializeWebSocket();
     }
 
@@ -114,12 +118,14 @@ class Client extends EventDispatcher {
             // call the check to see if the developer wants this event
             if (check != null) {
                 if (check(event)) {
+                    // if an error occurs in callback,
+                    // the event should be removed regardless
+                    removeEventListener(type, onTriggered); 
                     callback(event);
-                    removeEventListener(type, onTriggered);
                 }
             } else { // no check was provided; call inmediately
-                callback(event);
                 removeEventListener(type, onTriggered);
+                callback(event);
             }
         }
 

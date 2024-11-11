@@ -4,7 +4,7 @@ import discord.Sticker.GuildStickerPayload;
 import discord.Member;
 import discord.Role.RolePayload;
 import discord.Activity.PartialPresenceUpdatePayload;
-import discord.types.Snowflake;
+import discord.Snowflake;
 import discord.State.ConnectionState;
 import discord.Channel;
 

@@ -1,6 +1,7 @@
 package discord;
 
 // Events
+import discord.Http.MultipartData;
 import discord.utils.events.MemberEvents.MemberUnban;
 import discord.utils.events.MemberEvents.MemberBan;
 import haxe.Json;
