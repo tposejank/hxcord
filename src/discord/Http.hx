@@ -1,5 +1,6 @@
 package discord;
 
+import sys.thread.Deque;
 import haxe.EntryPoint;
 import haxe.MainLoop;
 import sys.thread.Thread;
@@ -133,26 +134,30 @@ class Ratelimit {
      */
     public var outgoing:Int;
     /**
-     * How many requests are made after the ratelimit was hit.
-     */
-    public var past_due:Int;
-    /**
      * How much time to wait between rate limit resets
      */
     public var reset_after:Float;
 
-    private var timerStarted:Bool = false;
+    public var deque:Deque<Void->Void>;
 
-    public function new() {
+    public var key:String;
+
+    /**
+     * Key is for internal representation. Not needed.
+     */
+    public function new(key:String) {
         this.limit = 1;
         this.remaining = this.limit;
-        this.past_due = 0;
         this.outgoing = 0;
+        this.key = key;
+
+        this.deque = new Deque<Void->Void>();
     }
 
     public function update(request:haxe.Http) {
         this.limit = Std.parseInt(request.get_header_safe('X-Ratelimit-Limit'));
-        this.remaining = Std.int(Math.min(Std.parseInt(request.get_header_safe('X-Ratelimit-Remaining')), limit - outgoing));
+        this.remaining = Std.int(Math.min(Std.parseInt(request.get_header_safe('X-Ratelimit-Remaining')), this.limit - this.outgoing));
+        // this.remaining = Std.parseInt(request.get_header_safe('X-Ratelimit-Remaining'));
         
         var r_after = request.get_header_safe('X-Ratelimit-Reset-After');
         if (r_after == null) {
@@ -162,54 +167,22 @@ class Ratelimit {
         } else {
             this.reset_after = Std.parseFloat(r_after);
         }
-        trace('The ratelimit has been updated. Received:');
-        trace('limit=${this.limit}');
-        trace('remaining=${this.remaining}');
-        trace('reset_after=${this.reset_after}');
     }
 
-    public function get_retroactive_wait_time():Float {
-        outgoing += 1;
-        remaining = limit - outgoing;
+    public function request_spot() {
+        this.remaining -= 1;
+        this.outgoing += 1;
 
-        if (remaining > 0) {
-            return 0; // No need to wait if we're within limit
-        } else {
-            past_due += 1;
-            Log.info('This bucket is retroactively ratelimiting any requests. Currently stocking ${past_due}');
-            
-            // Start reset timer only once when we exceed the rate limit
-            if (!timerStarted) {
-                timerStarted = true;
-                Log.warn('Reset timer started for ${this.reset_after * 1000}ms');
-                EntryPoint.runInMainThread(() -> {
-                    haxe.Timer.delay(() -> {
-                        reset();
-                    }, Std.int(this.reset_after * 1000));
-
-                    var decrease_past_due_tmr = new haxe.Timer(Std.int(this.reset_after * 1000));
-                    decrease_past_due_tmr.run = () -> {
-                        past_due -= 1;
-                        outgoing = past_due;
-                        remaining = limit - outgoing;
-                        if (past_due <= 0) {
-                            decrease_past_due_tmr.stop();
-                            past_due = 0;
-                        }
-                    }
-                });
-            }
-
-            return Math.min(reset_after * past_due, reset_after * limit); // Return wait time based on how far we're past the limit
+        if (this.remaining <= 0) {
+            Sys.sleep(this.reset_after);
         }
-    }
 
-    public function reset():Void {
-        // Reset counters after timer finishes
-        outgoing = past_due;
-        remaining = limit - outgoing;
-        past_due = 0;
-        timerStarted = false; // Allow the timer to start again if needed
+        // __aexit__
+        this.deque.add(() -> {
+            // trace('Outgoing has been decreased');
+            this.outgoing -= 1;
+            this.remaining = this.limit - this.outgoing;
+        });
     }
 }
 
@@ -223,7 +196,7 @@ class HTTPClient {
 
     public function new(token:String) {
         this.token = token;
-        globalRatelimit = new Ratelimit();
+        // globalRatelimit = new Ratelimit();
     }
 
     private function _setup_request(route:Route, headers:Map<String, String>, ?data:String, ?form:MultipartData):haxe.Http {
@@ -237,7 +210,6 @@ class HTTPClient {
 
         if (form != null) {
             var form_bytes = form.get_form_data().getBytes();
-            trace(form_bytes.toString());
             req.setPostBytes(form_bytes);
         }
 
@@ -247,7 +219,7 @@ class HTTPClient {
     private function get_bucket(key:String):Ratelimit {
         var bucket:Ratelimit = _buckets.get(key);
         if (bucket == null) {
-            bucket = new Ratelimit();
+            bucket = new Ratelimit(key);
             _buckets.set(key, bucket);
         }
         return bucket;
@@ -305,94 +277,101 @@ class HTTPClient {
 
         // TBD: ratelimit handling
 
-        var wait_secs = ratelimit.get_retroactive_wait_time();
-        Log.info('${route.method} ${route.url} was told to wait ${wait_secs}s');
-        Sys.sleep(wait_secs);
-
         // send the request in a loop retrying if a fail occurs
         for (i in 0...max_tries) {
-            tries = i;
-            // reset the output
-            __response = new haxe.io.BytesOutput();
+            ratelimit.request_spot();
+            var call = ratelimit.deque.pop(true);
 
-            // create a new request
-            var http_request = _setup_request(route, headers, data, form);
-            http_request.onError = on_err;
-            http_request.onStatus = on_status;
-            // investigate
-            // does not finish requesting when its the 3rd time???
-            http_request.customRequest(false, __response, null, route.method);
+            try {
+                tries = i;
+                // reset the output
+                __response = new haxe.io.BytesOutput();
 
-            // request is finalized
-            response = __response.getBytes();
-            // get the response data as string
-            var response_str = response.toString();
+                // create a new request
+                var http_request = _setup_request(route, headers, data, form);
+                http_request.onError = on_err;
+                http_request.onStatus = on_status;
+                // investigate
+                // does not finish requesting when its the 3rd time???
+                http_request.customRequest(false, __response, null, route.method);
 
-            var discord_hash:String = http_request.get_header_safe('X-Ratelimit-Bucket');
-            var has_ratelimit_headers = http_request.header_exists_safe('X-Ratelimit-Remaining');
-            if (discord_hash != null) {
-                if (bucket_hash != discord_hash) {
-                    if (bucket_hash != null) {
-                        Log.debug('The route ${route_key} has changed hashes: ${bucket_hash} -> ${discord_hash}');
-                        this._bucket_hashes.set(route_key, discord_hash);
-                        var recalculated_key = discord_hash + route.major_parameters;
-                        this._buckets.set(recalculated_key, ratelimit);
-                        this._buckets.pop(key);
-                    } else if (!_bucket_hashes.exists(route_key)) {
-                        Log.debug('${route.key} has found its initial rate limit bucket hash (${discord_hash})');
-                        this._bucket_hashes.set(route_key, discord_hash);
-                        this._buckets.set(discord_hash + route.major_parameters, ratelimit);
+                // request is finalized
+                response = __response.getBytes();
+                // get the response data as string
+                var response_str = response.toString();
+
+                var discord_hash:String = http_request.get_header_safe('X-Ratelimit-Bucket');
+                var has_ratelimit_headers = http_request.header_exists_safe('X-Ratelimit-Remaining');
+                if (discord_hash != null) {
+                    if (bucket_hash != discord_hash) {
+                        if (bucket_hash != null) {
+                            Log.debug('The route ${route_key} has changed hashes: ${bucket_hash} -> ${discord_hash}');
+                            this._bucket_hashes.set(route_key, discord_hash);
+                            var recalculated_key = discord_hash + route.major_parameters;
+                            this._buckets.set(recalculated_key, ratelimit);
+                            this._buckets.pop(key);
+                        } else if (!_bucket_hashes.exists(route_key)) {
+                            Log.debug('${route.key} has found its initial rate limit bucket hash (${discord_hash})');
+                            this._bucket_hashes.set(route_key, discord_hash);
+                            this._buckets.set(discord_hash + route.major_parameters, ratelimit);
+                        }
+                    }   
+                }
+
+                if (has_ratelimit_headers) {
+                    if (responseCode != 429) {
+                        ratelimit.update(http_request);
                     }
-                }   
-            }
-
-            if (has_ratelimit_headers) {
-                if (responseCode != 429) {
-                    ratelimit.update(http_request);
-                }
-            }
-
-            // request successful, return the data
-            if ((300 > responseCode) && (responseCode >= 200)) {
-                if (callback != null) callback(response_str);
-                return;
-            }
-
-            if (responseCode == 429) {
-                if (!http_request.header_exists_safe('Via')) {
-                    throw new HTTPException(response_str, "HTTPException", responseCode);
                 }
 
-                if (ratelimit.remaining > 0) {
-                    // Log.info('Subratelimit hit?');
+                // request successful, return the data
+                if ((300 > responseCode) && (responseCode >= 200)) {
+                    call();
+                    if (callback != null) callback(response_str);
+                    return;
                 }
 
-                var ratelimit_data = haxe.Json.parse(response_str);
-                var retry_after:Float = ratelimit_data.retry_after;
-                Log.error(ratelimit_data.message + ' Sleeping for ${retry_after}s.');
-                Sys.sleep(retry_after);
+                if (responseCode == 429) {
+                    if (!http_request.header_exists_safe('Via')) {
+                        throw new HTTPException(response_str, "Blocked by Cloudflare", responseCode);
+                    }
 
-                Log.info('Ratelimit sleep is complete. Retrying this request.');
-                continue;
-            }
-            
-            // retry the request because of server error
-            if ([500, 502, 504, 524].contains(responseCode) && i != (max_tries-1)) {
-                Sys.sleep(1 + tries * 2);
-                continue;
-            }
+                    if (ratelimit.remaining > 0) {
+                        // Log.info('Subratelimit hit?');
+                    }
 
-            // handle other codes
-            if (responseCode == 401)
-                throw new Unauthorized(response_str, responseCode);
-            else if (responseCode == 403)
-                throw new Forbidden(response_str, responseCode);
-            else if (responseCode == 404)
-                throw new NotFound(response_str, responseCode);
-            else if (responseCode >= 500)
-                throw new DiscordServerError(response_str, responseCode);
-            else 
-                throw new HTTPException(response_str, responseCode);
+                    var ratelimit_data = haxe.Json.parse(response_str);
+                    var retry_after:Float = ratelimit_data.retry_after;
+                    Log.error(ratelimit_data.message + ' Sleeping for ${retry_after}s.');
+                    Sys.sleep(retry_after);
+
+                    Log.info('Ratelimit sleep is complete. Retrying this request.');
+                    call();
+                    continue;
+                }
+                
+                // retry the request because of server error
+                if ([500, 502, 504, 524].contains(responseCode) && i != (max_tries-1)) {
+                    Sys.sleep(1 + tries * 2);
+                    call();
+                    continue;
+                }
+
+                // handle other codes
+                if (responseCode == 401)
+                    throw new Unauthorized(response_str, responseCode);
+                else if (responseCode == 403)
+                    throw new Forbidden(response_str, responseCode);
+                else if (responseCode == 404)
+                    throw new NotFound(response_str, responseCode);
+                else if (responseCode >= 500)
+                    throw new DiscordServerError(response_str, responseCode);
+                else 
+                    throw new HTTPException(response_str, responseCode);
+            } catch(e) {
+                call();
+                throw e;
+            }
         }
 
         // TODO handle ratelimits and json responses

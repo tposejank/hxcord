@@ -25,8 +25,20 @@ class GatewayReset extends Event {
     }
 }
 
+/**
+ * Fired when the `READY` event is received.
+ */
 class Connect extends Event {
     public function new() {
         super('connect');
+    }
+}
+
+/**
+ * Fired when all the initial guilds finish chunking.
+ */
+class Ready extends Event {
+    public function new() {
+        super('ready');
     }
 }

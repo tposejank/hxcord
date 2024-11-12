@@ -2,6 +2,9 @@ package discord.utils.events;
 
 import discord.utils.events.EventDispatcher.Event;
 
+/**
+ * Fired when an user is updated.
+ */
 class UserUpdate extends Event {
     public var old_user:User;
     public var new_user:User;

@@ -206,8 +206,6 @@ class Gateway extends discord.utils.events.EventDispatcher {
             Log.error('[HAXEWS] WebSocket closed with code $code');
             Log.error('[DISCRD] $message');
 
-            sys.io.File.saveContent('disconnects.log', sys.io.File.getContent('disconnects.log') + '\nDISCONNECT OCCURRED\nTime: ${Sys.time()}\nDate: ${Date.now().toString()}\nMessage: ${message}\nCode: ${code}\n-------------');
-
             handle_disconnect_code(code, message);
         }
 
@@ -395,6 +393,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
                         _session_id = data.d.session_id;
                         resume_url = data.d.resume_gateway_url;
                         identified = true;
+                    case "RESUMED":
+                        Log.info('Successfully resumed session');
                 }
             
             case HEARTBEAT:
@@ -464,7 +464,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
         catch (ex)
         {
             shutDown();
-            throw new GatewayCantReconnect('${ex}, Cannot reconnect');
+            throw new GatewayCantReconnect('Cannot reconnect: ${ex}');
         }
     }
 
@@ -508,6 +508,26 @@ class Gateway extends discord.utils.events.EventDispatcher {
 
     function get_latency():Float {
         return last_heartbeat_ack_received - last_heartbeat_sent;
+    }
+
+    public function request_chunks(guild_id:String, presences:Bool = true, limit:Int = 0) {
+        var payload:Payload = new Payload(Opcodes.REQUEST_GUILD_MEMBERS, {
+                guild_id: guild_id,
+                presences: presences,
+                limit: limit,
+                query: ""
+        });
+
+        // if nonce:
+        //     payload['d']['nonce'] = nonce
+
+        // if user_ids:
+        //     payload['d']['user_ids'] = user_ids
+
+        // if query is not None:
+        //     payload['d']['query'] = query
+
+        send(haxe.Json.stringify(payload));
     }
 }
 

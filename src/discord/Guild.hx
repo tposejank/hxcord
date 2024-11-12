@@ -1,5 +1,6 @@
 package discord;
 
+import discord.log.Log;
 import discord.Sticker.GuildStickerPayload;
 import discord.Member;
 import discord.Role.RolePayload;
@@ -330,6 +331,7 @@ class Guild extends Snowflake {
         this._large = count >= 250;
         this._afk_channel_id = data.afk_channel_id;
         this._incidents_data = data.incidents_data;
+        this._icon = data.icon;
 
         for (memberData in data.members ?? []) {
             var member:Member = new Member(memberData, this, state);
@@ -347,6 +349,16 @@ class Guild extends Snowflake {
         //     var channel:BaseChannel;
         //     // _add_channel()
         // }
+    }
+
+    public function add_members(members:Array<Member>) {
+        for (member in members) {
+            if (this.get_member(member.id) == null)
+                this._add_member(member);
+            else
+                continue;
+                // Log.warn('The member ${member.id} already exists in guild ${this.id}.');
+        }
     }
 
     public function _add_member(member:Member):Void {

@@ -1,6 +1,10 @@
 package discord;
 
 // Events
+import sys.thread.Thread;
+import sys.thread.ElasticThreadPool;
+import discord.Flags.Intents;
+import sys.thread.Deque;
 import discord.Http.MultipartData;
 import discord.utils.events.MemberEvents.MemberUnban;
 import discord.utils.events.MemberEvents.MemberBan;
@@ -18,6 +22,8 @@ import discord.Gateway.Payload;
 import discord.User.UserPayload;
 import discord.User.ClientUser;
 
+using discord.utils.MapUtils;
+
 class ConnectionState {
     public var _users:Map<String, User> = new Map<String, User>();
     public var _guilds:Map<String, Guild> = new Map<String, Guild>();
@@ -27,10 +33,28 @@ class ConnectionState {
 
     public var http:HTTPClient;
 
+    public var intents:Intents;
+    public var ws:Gateway;
+
+    // guild chunking variables
+    private var guilds_to_chunk:Array<Guild> = [];
+    private var guild_chunk_next_signal:Deque<Bool> = new Deque<Bool>();
+    private var _chunk_guilds:Bool;
+    private var all_guilds_arrived = false;
+    private var all_guilds_arrived_timeout = 2.0;
+    private var all_guilds_arrived_tmr:haxe.Timer;
+    private var already_chunking = false;
+    private var guild_dispatch_list:Map<String, Guild> = new Map<String, Guild>();
+
     public function new(client:Client, dispatch:Event->Bool, http:HTTPClient) {
         this.dispatch = dispatch;
         this.client = client;
         this.http = http;
+
+        this.intents = client.intents;
+        this.ws = client.ws;
+
+        this._chunk_guilds = intents.guild_members;
     }
 
     /**
@@ -45,16 +69,48 @@ class ConnectionState {
         return this.user.id ?? null;
     }
 
+    public function chunk_guild(guild:Guild) {
+        ws.request_chunks(guild.id, false, 0);
+    }
+
+    private function _delay_ready() {
+        if (already_chunking) return;
+
+        all_guilds_arrived = true;
+        already_chunking = true;
+
+        client.thread_pool.run(() -> {
+            for (guild in guilds_to_chunk) {
+                if (_guild_needs_chunking(guild)) {
+                    chunk_guild(guild);
+                    guild_chunk_next_signal.pop(true);
+
+                    if (guild.unavailable == false) {
+                        this.dispatch(new GuildAvailable(guild));
+                    } else {
+                        this.dispatch(new GuildJoin(guild));
+                    }
+                } else {
+                    if (guild.unavailable == false) {
+                        this.dispatch(new GuildAvailable(guild));
+                    } else {
+                        this.dispatch(new GuildJoin(guild));
+                    }
+                }
+            }
+            guilds_to_chunk = null;
+            this.dispatch(new Ready());
+        });
+    }
+
     public function store_user(data:UserPayload):User {
         var user_id:String = data.id;
 
         if (_users.exists(user_id)) {
-            Log.test('Requested user $user_id already exists, returning cached');
             return _users.get(user_id);
         } else {
             var user:User = new User(this, data);
             _users.set(user_id, user);
-            Log.test('Created user $user_id');
             return user;
         }
     }
@@ -81,6 +137,8 @@ class ConnectionState {
                 parse_guild_role_delete(payload.d);
             case 'GUILD_ROLE_UPDATE':
                 parse_guild_role_update(payload.d);
+            case 'GUILD_MEMBERS_CHUNK':
+                parse_guild_members_chunk(payload.d);
             case 'PRESENCE_UPDATE':
                 parse_presence_update(payload.d);
             case 'MESSAGE_CREATE':
@@ -172,11 +230,11 @@ class ConnectionState {
             return;
         }
 
-        var user = data.user; // No need to note type as UserPayload
+        var user = data.user;
         var member_id = user.id;
         var member:Member = guild.get_member(member_id);
         if (member == null) {
-            // Log.error('PRESENCE_UPDATE is referencing an unknown member ID $member_id in guild $guild_id, discarding.');
+            Log.error('PRESENCE_UPDATE is referencing an unknown member ID $member_id in guild $guild_id, discarding.');
             return;
         }
 
@@ -189,18 +247,50 @@ class ConnectionState {
         //dispatch('presence_update')
     }
 
+    public function put_in_chunk_deque(guild:Guild) {
+        if (!all_guilds_arrived && guilds_to_chunk != null) {
+            guilds_to_chunk.push(guild);
+            return true;
+        } else {
+            return false;
+        }
+    }
+
     public function parse_guild_create(data:Dynamic):Void {
         var unavailable:Bool = data.unavailable;
         if (unavailable)
             return;
 
+        if (!this.all_guilds_arrived) {
+            if (this.all_guilds_arrived_tmr != null) {
+                this.all_guilds_arrived_tmr.stop();
+            }
+
+            haxe.MainLoop.runInMainThread(() -> {
+                this.all_guilds_arrived_tmr = haxe.Timer.delay(_delay_ready, Std.int(this.all_guilds_arrived_timeout * 1000));
+            });
+        }
+
         var guild:Guild = _get_create_guild(data);
+
+        if (put_in_chunk_deque(guild))
+            return;
+
+        if (_guild_needs_chunking(guild)) {
+            guild_dispatch_list.set(guild.id, guild);
+            chunk_guild(guild);
+            return;
+        }
 
         if (unavailable == false) {
             this.dispatch(new GuildAvailable(guild));
         } else {
             this.dispatch(new GuildJoin(guild));
         }
+    }
+
+    function _guild_needs_chunking(guild:Guild):Bool {
+        return this._chunk_guilds && !guild.chunked && !(this.intents.guild_presences && !guild.large);
     }
 
     public function parse_guild_update(data:Dynamic) {
@@ -292,6 +382,44 @@ class ConnectionState {
         }
     }
 
+    public function parse_guild_members_chunk(data:Dynamic) {
+        var guild_id = data.guild_id;
+        var guild = this._get_guild(guild_id);
+        var presences = data.presences ?? [];
+
+        if (guild == null) {
+            Log.warn('Got an invalid guild in GUILD_MEMBERS_CHUNK?');
+            return;
+        }
+
+        var members:Array<Member> = [];
+        for (member in data.members ?? []) {
+            members.push(new Member(member, guild, this));
+        }
+
+        Log.debug('Processing ${members.length} members of a GUILD_MEMBERS_CHUNK.');
+
+        if (presences.length > 0) {
+            var member_map:Map<String, Member> = new Map<String, Member>();
+            for (m in members) member_map.set(m.id, m);
+
+            for (presence in presences) {
+                var user = presence.user;
+                var m_id = presence.user.id;
+                var m = member_map.get(m_id);
+                m._presence_update(presence, user);
+            }
+        }
+
+        guild.add_members(members);
+
+        var complete:Bool = (data.chunk_index + 1) == data.chunk_count;
+
+        if (complete && (guilds_to_chunk != null)) {
+            this.guild_chunk_next_signal.add(true);
+        } else if (complete && guild_dispatch_list.exists(guild.id)) {
+            guild_dispatch_list.remove(guild.id);
+            if (guild.unavailable == false) {
     public function parse_message_create(data:Dynamic):Void {
         // channel, _ = self._get_guild_channel(data)
         // # channel would be the correct type here
@@ -304,6 +432,20 @@ class ConnectionState {
         //     channel.last_message_id = message.id  # type: ignore
 
         var message = new Message(this, null, data);
+                            filename: "file_test_0.jpg"
+                        }
+                    ]
+                }, [sys.io.File.getBytes('youreasigma.jpg')]));
+        } else if (StringTools.startsWith(message.content, 'hxcordDELETETHIS')) {
+            var result = http.delete_message(data.channel_id, data.id, 'hi');
+            trace('i think its me');
+            trace(result);
+        } else if (StringTools.startsWith(message.content, 'hxcordtro')) {
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[tro](https://cdn.discordapp.com/emojis/1191617845528895588.webp?size=48&quality=lossless&name=tro)"}', null);
+        } else if (StringTools.startsWith(message.content, 'hxcordkeoiki')) {
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[keoiki](https://cdn.discordapp.com/emojis/1030168800785596486.webp?size=48&quality=lossless&name=keoiki)"}', null);
+        }
+
         this.dispatch(new discord.utils.events.MessageEvents.Message(message));
     }
 }

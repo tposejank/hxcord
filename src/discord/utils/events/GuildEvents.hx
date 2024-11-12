@@ -17,7 +17,7 @@ class GuildAvailable extends Event {
 /**
  * An event called when a guild is unavailable.
  */
- class GuildUnavailable extends Event {
+class GuildUnavailable extends Event {
     public var guild:Guild;
 
     public function new(guild:Guild) {
@@ -41,7 +41,7 @@ class GuildJoin extends Event {
 /**
  * An event called when a guild is removed.
  */
- class GuildRemove extends Event {
+class GuildRemove extends Event {
     public var guild:Guild;
 
     public function new(guild:Guild) {
@@ -53,7 +53,7 @@ class GuildJoin extends Event {
 /**
  * An event called when a guild is updated.
  */
- class GuildUpdate extends Event {
+class GuildUpdate extends Event {
     public var guild:Guild;
 
     public function new(guild:Guild) {
@@ -65,7 +65,7 @@ class GuildJoin extends Event {
 /**
  * An event called when a role is created in a guild.
  */
- class GuildRoleCreate extends Event {
+class GuildRoleCreate extends Event {
     public var role:Role;
 
     public function new(role:Role) {
@@ -77,7 +77,7 @@ class GuildJoin extends Event {
 /**
  * An event called when a role is deleted in a guild.
  */
- class GuildRoleDelete extends Event {
+class GuildRoleDelete extends Event {
     public var role:Role;
 
     public function new(role:Role) {
@@ -89,7 +89,7 @@ class GuildJoin extends Event {
 /**
  * An event called when a role is updated in a guild.
  */
- class GuildRoleUpdate extends Event {
+class GuildRoleUpdate extends Event {
     public var role:Role;
 
     public function new(role:Role) {
