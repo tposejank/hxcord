@@ -4,6 +4,9 @@ import haxe.Int64;
 
 using discord.utils.StringUtils;
 
+/**
+ * The bit-wise `Int64` integers which represent each permission.
+ */
 class Permission {
     public static var CREATE_INSTANT_INVITE = pshl(1, 0);
     public static var KICK_MEMBERS = pshl(1, 1);
@@ -63,6 +66,9 @@ class Permission {
     }
 }
 
+/**
+ * Wraps up the Discord permission value.
+ */
 class Permissions {
     /**
      * If the user can create instant invites.

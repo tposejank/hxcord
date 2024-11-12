@@ -8,11 +8,6 @@ import haxe.ws.Types.MessageType;
 import haxe.ws.WebSocket;
 import haxe.Json;
 
-enum abstract GatewayEvent(String) from String to String {
-    var GATEWAY_RECEIVE_EVENT = 'GATEWAY_RECEIVE';
-    var GATEWAY_RESET_EVENT = 'GATEWAY_RESET';
-}
-
 @:structInit
 @:publicFields
 class Payload
@@ -42,6 +37,8 @@ class Payload
 }
 
 /**
+ * Implements a WebSocket for Discord's gateway version 10.
+ * 
  * This class is based on
  * https://github.com/SanicBTW/HxDiscordGateway/blob/master/source/discord/Gateway.hx
  */
@@ -104,6 +101,9 @@ class Gateway extends discord.utils.events.EventDispatcher {
      */
     public var latency(get, never):Float;
 
+    /**
+     * The intents of `this` gateway.
+     */
     public var intents:Intents;
 
     /**
@@ -117,8 +117,9 @@ class Gateway extends discord.utils.events.EventDispatcher {
     private var identified:Bool = false;
 
     /**
-     * Initialize the Gateway
-     * @param token The application token
+     * Initializes the Gateway.
+     * @param token The application token.
+     * @param intents The intents to log into the gateway with.
      */
     public function new(token:String, intents:Intents) {
         this._token = token;
@@ -127,7 +128,8 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     /**
-     * Initialize the `WebSocket`.
+     * Initializes the `WebSocket`.
+     * @param url The url to connect to.
      */
     public function initializeWebSocket(url:String = "wss://gateway.discord.gg/?v=10&encoding=json"):Void {
         #if sys
@@ -224,7 +226,7 @@ class Gateway extends discord.utils.events.EventDispatcher {
     }
 
     /**
-     * According to https://github.com/discord/discord-api-docs/pull/7172#issue-2546244404
+     * According to [this issue](https://github.com/discord/discord-api-docs/pull/7172#issue-2546244404), the close codes
      * `4001`, `4003`, `4004`, `4005`, `4007`, `4009`, `4010`, `4011`, `4012`, `4013` and `4014` CANNOT be resumed.
      */
     public function handle_disconnect_code(code:Int, message:String):Void {
@@ -532,10 +534,10 @@ class Gateway extends discord.utils.events.EventDispatcher {
 }
 
 /**
+ * Represents each [Gateway Opcode](https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-opcodes).
+ * 
  * This class is from
  * https://github.com/SanicBTW/HxDiscordGateway/blob/master/source/discord/gateway/Opcodes.hx
- * 
- * https://discord.com/developers/docs/topics/opcodes-and-status-codes#gateway-gateway-opcodes
  */
 enum abstract Opcodes(Int) to Int
 {

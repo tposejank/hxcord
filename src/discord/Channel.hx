@@ -109,7 +109,10 @@ typedef GuildChannelPayload = {
     >MediaChannelPayload,
 }
 
-class GuildChannel extends Messageable { // abc
+/**
+ * The common starting point for a Discord `Guild` channel.
+ */
+class GuildChannel extends Messageable {
     /**
      * The channel name.
      */
@@ -352,6 +355,9 @@ class MessageParameters {
     // var poll:
 }
 
+/**
+ * The common starting point for models that can be sent messages.
+ */
 class Messageable extends Snowflake {
     public var _state:ConnectionState;
 

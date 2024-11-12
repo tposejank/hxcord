@@ -12,7 +12,7 @@ class GatewayReceive extends Event {
 
     public function new (payload:Payload) {
         this.payload = payload;
-        super("GATEWAY_RECEIVE", false, false);
+        super("socket_receive", false, false);
     }
 }
 
@@ -21,7 +21,7 @@ class GatewayReceive extends Event {
  */
 class GatewayReset extends Event {
     public function new() {
-        super('GATEWAY_RESET');
+        super('socket_reset');
     }
 }
 

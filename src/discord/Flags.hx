@@ -27,6 +27,9 @@ enum abstract Intent(Int) from Int to Int {
     var DIRECT_MESSAGE_POLLS = 1 << 25;
 }
 
+/**
+ * Wraps up a Discord gateway intent flag.
+ */
 class Intents {
     /**
      * Corresponds to the following:

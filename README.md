@@ -51,14 +51,18 @@ class Main {
 ## Requirements
 - Haxe 4.3+
 
-## Supported platforms
-- Neko
-- HashLink (*Recommended*)
-- C++ (Requires `hxcpp`)
+## Supported Platforms
+
+- ![HashLink](https://custom-icon-badges.demolab.com/badge/HashLink-625ca2?logo=hashlink)
+- ![Neko](https://custom-icon-badges.demolab.com/badge/Neko-f4511e?logo=nekovm&logoColor=white)
+- ![C++ (HXCPP)](https://custom-icon-badges.demolab.com/badge/C++%20(HXCPP)-blue?logo=hxcpp)
     
     Including, but not limited to:
-    - Windows (Lime)
-    - Android (Lime)
+
+    - ![Windows](https://custom-icon-badges.demolab.com/badge/Windows-0078D6?logo=windows11&logoColor=white)
+    - ![macOS](https://img.shields.io/badge/-macOS-000000?logo=apple&logoColor=white&style=flat)
+    - ![Linux](https://img.shields.io/badge/-Linux-FCC624?logo=linux&logoColor=black&style=flat)
+    - ![Android](https://img.shields.io/badge/-Android-3DDC84?logo=android&logoColor=white&style=flat)
 
 ## Documentation
 Comprehensive documentation and additional examples can be found in the wiki.

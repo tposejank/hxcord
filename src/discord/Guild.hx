@@ -149,6 +149,9 @@ typedef GuildPayload = {
     @:optional var premium_progress_bar_enabled:Bool;    
 }
 
+/**
+ * Represents a Discord guild.
+ */
 class Guild extends Snowflake {
     private var _channels:Map<String, GuildChannel> = new Map<String, GuildChannel>();
     private var _members:Map<String, Member> = new Map<String, Member>();

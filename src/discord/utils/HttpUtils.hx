@@ -1,5 +1,8 @@
 package discord.utils;
 
+/**
+ * Utility extension to handle `haxe.Http` requests more quickly.
+ */
 class HttpUtils {
     public static function get_header_safe(http:haxe.Http, key:String):String {
         if (http.responseHeaders.exists(key.toUpperCase()))

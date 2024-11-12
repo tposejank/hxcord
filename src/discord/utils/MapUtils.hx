@@ -24,6 +24,9 @@ class MapUtils {
         return value;
     }
 
+    /**
+     * Get the length of `this` `Map`.
+     */
     public static function length<K, V>(map:Map<K, V>):Int {
         return values(map).length;
     }

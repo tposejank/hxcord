@@ -2,6 +2,9 @@ package discord.utils;
 
 import haxe.io.BytesOutput;
 
+/**
+ * Utility extension to handle `multipart/form-data` requests more quickly.
+ */
 class MultipartUtils {
     public static function boundary(output:BytesOutput) {
         output.writeString('--hxcordboundary');

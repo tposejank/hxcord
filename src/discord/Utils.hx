@@ -8,6 +8,9 @@ import haxe.crypto.Base64;
 using StringTools;
 using discord.utils.StringUtils;
 
+/**
+ * Utility class for various operations.
+ */
 class Utils {
     public static var DISCORD_EPOCH:Int64 = "1420070400000".i64();
 

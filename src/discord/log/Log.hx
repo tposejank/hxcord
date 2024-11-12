@@ -10,6 +10,11 @@ import discord.log.ansi.colors.Color;
 
 using StringTools;
 
+/**
+ * Represents a logging level.
+ * 
+ * Levels above the level set will not show as they're logged.
+ */
 class LogLevel {
     public static var TRACE = 0;
     public static var ERROR = 1;
@@ -20,6 +25,8 @@ class LogLevel {
 }
 
 /**
+ * Utility class to perform logging operations.
+ * 
  * This class *originally* is from
  * https://github.com/CobaltBar/FNF-Horizon-Engine/blob/main/source/horizon/util/Log.hx
  * 

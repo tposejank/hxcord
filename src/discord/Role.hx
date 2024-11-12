@@ -37,7 +37,7 @@ typedef RoleTagsPayload = {
 }
 
 /**
- * Represents tags on a role.
+ * Represents tags on a `Role`.
  * 
  * A role tag is a piece of extra information attached to a managed role
  * that gives it context for the reason the role is managed.

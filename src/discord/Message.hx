@@ -202,6 +202,9 @@ class PartialMessage extends Snowflake {
     }
 }
 
+/**
+ * Represents a message from Discord.
+ */
 class Message extends PartialMessage {
     public var webhook_id:String;
 

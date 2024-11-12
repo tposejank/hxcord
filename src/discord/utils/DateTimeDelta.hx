@@ -1,5 +1,8 @@
 package discord.utils;
 
+/**
+ * Represents a time period in seconds.
+ */
 class DateTimeDelta {
     public var days:Int;
     public var hours:Int;

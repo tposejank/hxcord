@@ -12,10 +12,10 @@ import discord.User.ClientUser;
 import discord.utils.events.EventDispatcher;
 import discord.utils.events.GatewayEvents;
 
+/**
+ * Represents a client that connects to Discord's gateway and API.
+ */
 class Client extends EventDispatcher {
-    // Thanks Haxe, for being able to achieve only
-    // single-inheritance!
-
     /**
      * The Client's Discord token.
      */
@@ -50,14 +50,14 @@ class Client extends EventDispatcher {
 
         #if !NO_TRUE_ASYNC
         thread_pool = new ElasticThreadPool(20);
-        ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, (e) -> {
+        ws.addEventListener('socket_receive', (e) -> {
             thread_pool.run(() -> {
                 state.on_dispatch(e);
             });
         }, false, 1);
         #else
         Log.warn('NO_TRUE_ASYNC is enabled; Asynchronous operations will be synchronous.');
-        ws.addEventListener(GatewayEvent.GATEWAY_RECEIVE_EVENT, state.on_dispatch, false, 1);
+        ws.addEventListener('socket_receive', state.on_dispatch, false, 1);
         #end
     }
 

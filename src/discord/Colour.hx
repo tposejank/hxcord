@@ -1,6 +1,8 @@
 package discord;
 
 /**
+ * Represents a Discord role colour.
+ * 
  * This class is basically a hard copy of 
  * https://github.com/HaxeFlixel/flixel/blob/master/flixel/util/FlxColor.hx
  * 

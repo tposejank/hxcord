@@ -1,10 +1,10 @@
 package discord;
 
 /**
- * An ABC that details the common operations on a Discord model.
+ * The class for all global ID objects.
  * 
- * Almost all `Discord models <discord_api_models>` meet this
- * base class
+ * Almost all Discord models meet this
+ * base class.
  */
 class Snowflake {
     /**

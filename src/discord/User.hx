@@ -267,6 +267,9 @@ class BaseUser extends Messageable {
     }
 }
 
+/**
+ * Represents a Discord user.
+ */
 class User extends BaseUser {
     // TBD
     // DMChannel
@@ -337,6 +340,9 @@ class User extends BaseUser {
     }
 }
 
+/**
+ * Represents your Discord user.
+ */
 class ClientUser extends User {
     public var verified:Null<Bool>;
     public var locale:String;

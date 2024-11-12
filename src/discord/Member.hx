@@ -70,6 +70,11 @@ class _ClientStatus {
     }
 }
 
+/**
+ * Represents a member in a `Guild`.
+ * 
+ * This also wraps around `User`, but not inheriting it.
+ */
 class Member extends Messageable {
     private var _user:User;
 

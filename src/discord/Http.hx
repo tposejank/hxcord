@@ -186,6 +186,9 @@ class Ratelimit {
     }
 }
 
+/**
+ * Represents a wrapper class for sending API requests to Discord's REST API.
+ */
 class HTTPClient {
     public var token:String;
 
