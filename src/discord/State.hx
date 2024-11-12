@@ -439,20 +439,6 @@ class ConnectionState {
         //     channel.last_message_id = message.id  # type: ignore
 
         var message = new Message(this, null, data);
-                            filename: "file_test_0.jpg"
-                        }
-                    ]
-                }, [sys.io.File.getBytes('youreasigma.jpg')]));
-        } else if (StringTools.startsWith(message.content, 'hxcordDELETETHIS')) {
-            var result = http.delete_message(data.channel_id, data.id, 'hi');
-            trace('i think its me');
-            trace(result);
-        } else if (StringTools.startsWith(message.content, 'hxcordtro')) {
-            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[tro](https://cdn.discordapp.com/emojis/1191617845528895588.webp?size=48&quality=lossless&name=tro)"}', null);
-        } else if (StringTools.startsWith(message.content, 'hxcordkeoiki')) {
-            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[keoiki](https://cdn.discordapp.com/emojis/1030168800785596486.webp?size=48&quality=lossless&name=keoiki)"}', null);
-        }
-
         this.dispatch(new discord.utils.events.MessageEvents.Message(message));
     }
 }
