@@ -420,6 +420,13 @@ class ConnectionState {
         } else if (complete && guild_dispatch_list.exists(guild.id)) {
             guild_dispatch_list.remove(guild.id);
             if (guild.unavailable == false) {
+                this.dispatch(new GuildAvailable(guild));
+            } else {
+                this.dispatch(new GuildJoin(guild));
+            }
+        }
+    }
+
     public function parse_message_create(data:Dynamic):Void {
         // channel, _ = self._get_guild_channel(data)
         // # channel would be the correct type here
