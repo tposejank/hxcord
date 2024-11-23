@@ -1,5 +1,7 @@
 package discord;
 
+import haxe.Json;
+import discord.Message.MessagePayload;
 import sys.thread.Deque;
 import haxe.EntryPoint;
 import haxe.MainLoop;
@@ -260,7 +262,7 @@ class HTTPClient {
         // define the output
         // null because compiler doesnt like it
         var __response:haxe.io.BytesOutput = null;
-        var response:haxe.io.Bytes;
+        var response:haxe.io.Bytes = null;
         var responseCode:Int;
 
         // wait for status code
@@ -275,10 +277,9 @@ class HTTPClient {
         var on_err:String->Void = (error:String) -> {
             // response is available at this moment
             Log.error('Got Error: ${error}');
-            response = __response.getBytes();
+            // response = __response.getBytes();
+            // do not do the above
         }
-
-        // TBD: ratelimit handling
 
         // send the request in a loop retrying if a fail occurs
         for (i in 0...max_tries) {
@@ -442,6 +443,15 @@ class HTTPClient {
         }), null, reason);
     }
 
+    public function delete_messages(channel_id:String, message_ids:Array<String>, reason:String = '') {
+        var payload = {
+            messages: message_ids
+        };
+        this.request(new Route('POST', '/channels/${channel_id}/messages/bulk-delete', null, {
+            channel_id: channel_id
+        }), Json.stringify(payload), reason);
+    }
+
     public function bulk_channel_update(guild_id:String, data:String, reason:String = '') {
         return this.request(new Route('PATCH', '/guilds/${guild_id}/channels'), data, reason);
     }
@@ -456,5 +466,13 @@ class HTTPClient {
             return this.request(route, null, null, params);
         else 
             return this.request(route, haxe.Json.stringify(params.payload));
+    }
+
+    public function get_message(channel_id:String, message_id:String):MessagePayload {
+        return this.request(new Route('GET', '/channels/${channel_id}/messages/${message_id}', null, {channel_id: channel_id}));
+    }
+
+    public function pins_from(channel_id:String):Array<MessagePayload> {
+        return this.request(new Route('GET', '/channels/${channel_id}/pins', null, {channel_id: channel_id}));
     }
 }

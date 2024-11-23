@@ -39,7 +39,6 @@ class Client extends EventDispatcher {
     public function new(token:String, intents:Intents) {
         super();
 
-        Log.init(LogLevel.TEST);
 
         this.token = token;
         this.intents = intents;
@@ -49,7 +48,7 @@ class Client extends EventDispatcher {
         this.state = new ConnectionState(this, this.dispatchEvent, this.http);
 
         #if !NO_TRUE_ASYNC
-        thread_pool = new ElasticThreadPool(20);
+        thread_pool = new ElasticThreadPool(25);
         ws.addEventListener('socket_receive', (e) -> {
             thread_pool.run(() -> {
                 state.on_dispatch(e);

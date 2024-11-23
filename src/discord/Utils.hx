@@ -75,7 +75,7 @@ class Utils {
      * @param isoDateString The date string.
      * @return Date
      */
-    public static function iso8601_to_date(isoDateString: String): Date {
+    public static function iso8601_to_date(isoDateString:String): Date {
         var isoRegex = ~/^(\d{4})-?(\d{2})-?(\d{2})T(\d{2}):?(\d{2}):?(\d{2})\.?(\d+)?(?:([+-]\d{2}):?(\d{2})|Z)$/;
         
         if (!isoRegex.match(isoDateString)) {
@@ -105,5 +105,27 @@ class Utils {
         var offsetMillis = offsetMinutes * 60 * 1000;
         var __time = utcDate.getTime() - offsetMillis;
         return Date.fromTime(__time);
+    }
+
+    /**
+     * Returns the first element for which in `Array` `array` the predicate `f` returns `true` for.
+     * 
+     * ```haxe
+     * var member:Member = Utils.find(guild.members, (member:Member) -> member.id == '012345');
+     * ```
+     * 
+     * If no result yields from this search, `null` is returned instead.
+     * 
+     * This is different from `Array.filter`, which returns a new `Array` and it may be empty.
+     * 
+     * @param array The array to find the element in.
+     * @param f The predicate that needs to meet the requirement.
+     */
+    public static function find<T>(array:Array<T>, f:T->Bool) {
+        for (i in array)
+            if (f(i)) 
+                return i;
+        
+        return null;
     }
 }

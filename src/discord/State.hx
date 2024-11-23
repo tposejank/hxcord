@@ -1,6 +1,10 @@
 package discord;
 
 // Events
+import haxe.ds.Vector;
+import discord.Channel.PartialMessageable;
+import discord.Message.PartialMessagePayload;
+import discord.Message.MessagePayload;
 import sys.thread.Thread;
 import sys.thread.ElasticThreadPool;
 import discord.Flags.Intents;
@@ -23,10 +27,12 @@ import discord.User.UserPayload;
 import discord.User.ClientUser;
 
 using discord.utils.MapUtils;
+using discord.utils.DequeUtils;
 
 class ConnectionState {
     public var _users:Map<String, User> = new Map<String, User>();
     public var _guilds:Map<String, Guild> = new Map<String, Guild>();
+    public var _messages:Array<Message> = [];
 
     public var client:Client;
     public var dispatch:Event->Bool;
@@ -46,6 +52,8 @@ class ConnectionState {
     private var already_chunking = false;
     private var guild_dispatch_list:Map<String, Guild> = new Map<String, Guild>();
 
+    public var max_messages:Int = 1000;
+
     public function new(client:Client, dispatch:Event->Bool, http:HTTPClient) {
         this.dispatch = dispatch;
         this.client = client;
@@ -55,6 +63,12 @@ class ConnectionState {
         this.ws = client.ws;
 
         this._chunk_guilds = intents.guild_members;
+    }
+
+    public function clear(views:Bool = true) {
+        this.user = null;
+        this._users = [];
+        this._guilds = [];
     }
 
     /**
@@ -79,7 +93,8 @@ class ConnectionState {
         all_guilds_arrived = true;
         already_chunking = true;
 
-        client.thread_pool.run(() -> {
+        // i use notrueasync to debug errors so threads here are mandatory and i need a thread available
+        #if NO_TRUE_ASYNC sys.thread.Thread.create( #else client.thread_pool.run( #end () -> {
             for (guild in guilds_to_chunk) {
                 if (_guild_needs_chunking(guild)) {
                     chunk_guild(guild);
@@ -187,10 +202,38 @@ class ConnectionState {
         return guild;
     }
 
-    public function clear(views:Bool = true) {
-        this.user = null;
-        this._users = [];
-        this._guilds = [];
+    public function _get_guild_channel(data:PartialMessagePayload):Array<Dynamic> {
+        var channel_id = data.channel_id;
+        var guild_id = data.guild_id;
+
+        var channel:Dynamic = null;
+        var guild:Guild = null;
+
+        if (guild_id != null) {
+            guild = this._get_guild(guild_id);
+            if (guild != null) {
+                channel = guild._resolve_channel(channel_id);
+            }
+        } else { // TBD
+            // channel = DMChannel._from_message(self, channel_id)
+            // guild = None
+        }
+
+        if (channel == null)
+            channel = new PartialMessageable(this, channel_id, guild_id);
+
+        return [channel, guild];
+    }
+
+    // bro i need fucking UNIONS NOW
+    public function create_message(channel:Dynamic, data:MessagePayload):Message {
+        return new Message(this, channel, data);
+    }
+
+    public function _get_message(message_id:String):Message {
+        var messages:Array<Message> = this._messages.copy(); 
+        messages.reverse();
+        return Utils.find(messages, (msg) -> msg.id == message_id);
     }
 
     public function parse_ready(data:Dynamic):Void {
@@ -438,7 +481,13 @@ class ConnectionState {
         // if channel and channel.__class__ in (TextChannel, VoiceChannel, Thread, StageChannel):
         //     channel.last_message_id = message.id  # type: ignore
 
-        var message = new Message(this, null, data);
+        var channel = this._get_guild_channel(data);
+        var message = new Message(this, channel, data);
+        if (this._messages != null) {
+            this._messages.add(message, this.max_messages);
+        }
+
+        if (StringTools.startsWith(message.content, 'hxcordrole')) {
         this.dispatch(new discord.utils.events.MessageEvents.Message(message));
     }
 }

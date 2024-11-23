@@ -1,11 +1,14 @@
 package discord;
 
+import discord.Message.PartialMessage;
 import discord.utils.errors.Errors.TypeError;
 import discord.Permissions.Permission;
 import haxe.ValueException;
 import haxe.exceptions.NotImplementedException;
 import discord.State.ConnectionState;
 import discord.Snowflake;
+
+using discord.utils.MapUtils;
 
 typedef BaseChannelPayload = {
     var id:String;
@@ -40,6 +43,12 @@ typedef TextChannelPayload = {
 typedef NewsChannelPayload = {
     >BaseTextChannelPayload,
     var type:Int;
+}
+
+// :upside_down:
+typedef TextChannelUnion = {
+    >TextChannelPayload,
+    >NewsChannelPayload,
 }
 
 typedef VoiceChannelPayload = {
@@ -109,6 +118,21 @@ typedef GuildChannelPayload = {
     >MediaChannelPayload,
 }
 
+enum abstract ChannelType(Int) from Int to Int {
+    var text = 0;
+    var _private = 1; // prefixed with a _ because haxe
+    var voice = 2;
+    var group = 3;
+    var category = 4;
+    var news = 5;
+    var news_thread = 10;
+    var public_thread = 11;
+    var private_thread = 12;
+    var stage_voice = 13;
+    var forum = 15;
+    var media = 16;
+}
+
 /**
  * The common starting point for a Discord `Guild` channel.
  */
@@ -127,7 +151,7 @@ class GuildChannel extends Messageable {
      */
     public var position:Int;
 
-    public var type:Int; // ENUM!!!
+    public var type(get, never):ChannelType;
 
     public var category_id:String;
 
@@ -135,11 +159,15 @@ class GuildChannel extends Messageable {
 
     public var _sorting_bucket(get, never):Int;
 
-    public function _update(guild:Guild, data:Dynamic) {
+    public function _update(guild:Guild, data:GuildChannelPayload) {
         throw new NotImplementedException();
     }
 
     function get__sorting_bucket():Int {
+        throw new NotImplementedException();
+    }
+
+    function get_type() {
         throw new NotImplementedException();
     }
 
@@ -231,6 +259,33 @@ class GuildChannel extends Messageable {
         }
     }
 
+    /**
+     * Handles permission resolution for the `Member` 
+     * or `Role`.
+     * 
+     * This function takes into consideration the following cases:
+     * 
+     * - Guild owner
+     * - Guild roles
+     * - Channel overrides
+     * - Member overrides
+     * - Implicit permissions
+     * - Member timeout
+     * - User installed app
+     * 
+     * If a `Role` is passed, then it checks the permissions
+     * someone with that role would have, which is essentially:
+     * 
+     * - The default role permissions
+     * - The permissions of the role used as a parameter
+     * - The default role permission overwrites
+     * - The permission overwrites of the role used as a parameter
+     * 
+     * @param obj The object to resolve permissions for. This could be either
+     * a member or a role. If it's a role then member overwrites
+     * are not computed.
+     * @return Permissions The resolved permissions for the member or role.
+     */
     public function permissions_for(obj:Dynamic):Permissions {
         if (obj is Snowflake) {
             if (this.guild.owner_id == cast(obj, Snowflake).id) {
@@ -320,6 +375,10 @@ class GuildChannel extends Messageable {
         return base;
     }
 
+    // function _clone_impl():Dynamic {
+
+    // }
+
     /**
      * Deletes the channel.
      * 
@@ -331,7 +390,15 @@ class GuildChannel extends Messageable {
         this._state.http.delete_channel(this.id, reason);
     }
 
-    public function clone(name:String, reason:String) {
+    /**
+     * Clones this channel. This creates a channel with the same properties
+     * as this channel.
+     * 
+     * You must have `Permissions.manage_channels` to do this.
+     * @param name The name of the new channel. If not provided, defaults to `this` channel name.
+     * @param reason The reason for cloning this channel. Shows up on the audit log.
+     */
+    public function clone(name:String, reason:String):Dynamic {
         throw new NotImplementedException();
     }
 }
@@ -365,6 +432,12 @@ class Messageable extends Snowflake {
         throw new NotImplementedException();
     }
 
+    /**
+     * Sends a message to the destination with the content given.
+     * 
+     * @param params `MessageParameters`. This can be used as a struct and therefore is not need to be created with `new()`.
+     * @return Message The message that was sent.
+     */
     public function send(params:MessageParameters):Message {
         if (params.content == null && params.embeds == null) {
             throw new TypeError('Either content or embeds must be null, not both');
@@ -376,5 +449,267 @@ class Messageable extends Snowflake {
         
 
         return null;
+    }
+
+    /**
+     * Retrieves a single `Message` from the destination.
+     * 
+     * @param id The message ID to look for.
+     * @return Message The message asked for.
+     */
+    public function fetch_message(id:String):Message {
+        var channel = this._get_channel();
+        var data = this._state.http.get_message(channel.id, id);
+        return this._state.create_message(channel, data);
+    }
+
+    /**
+     * Retrieves all messages that are currently pinned in the channel.
+     * 
+     * Due to a limitation with the Discord API, the `MessagePayload`
+     * objects returned by this method do not contain complete
+     * `reactions` data.
+     * 
+     * @return Array<Message> The messages that are currently pinned.
+     */
+    public function pins():Array<Message> {
+        var channel = _get_channel();
+        var state = this._state;
+        var data = state.http.pins_from(channel.id); 
+        return [for (m in data) state.create_message(channel, m)];
+    }
+
+    // this shit looks complicated!!
+    public function history(limit:Int = 100, ?before:Date, ?after:Date, ?around:Date, ?oldest_first:Bool):Array<Message> {
+        return [];
+    }
+}
+
+class PartialMessageable extends Messageable {
+    public var guild_id:String;
+    public var type:Int;
+
+    public function new(state:ConnectionState, id:String, guild_id:String = null, ?type:Int) {
+        this._state = state;
+        this.id = id;
+        this.guild_id = guild_id;
+        this.type = type;
+    }
+
+    public override function _get_channel():PartialMessageable {
+        return this;
+    }
+
+    public var guild(get, never):Guild;
+    function get_guild():Guild {
+        return this._state._get_guild(this.guild_id);
+    }
+
+    /**
+     * Returns a URL that allows the client to jump to the channel.
+     */
+    public var jump_url(get, never):String;
+    function get_jump_url():String return 'https://discord.com/channels/${this.guild.id}/${this.id}';
+
+    /**
+     * Returns the channel's creation time in UTC.
+     */
+    public var created_at(get, never):Date;
+    function get_created_at():Date return Utils.snowflake_time(this.id);
+
+    /**
+     * Handles permission resolution for a `User`.
+     * 
+     * This function is there for compatibility with other channel types.
+     * 
+     * Since partial messageables cannot reasonably have the concept of
+     * permissions, this will always return `Permissions.none`.
+     */
+    public function permissions_for(obj:Dynamic) {
+        return Permissions.none();
+    }
+}
+
+/**
+ * Represents a Discord guild text channel.
+ */
+class TextChannel extends GuildChannel {
+    private var _type:Int;
+    
+    public var topic:String;
+
+    public var nsfw:Null<Bool>;
+
+    public var slowmode_delay:Null<Float>;
+
+    public var default_auto_archive_duration:Null<Int>;
+
+    public var default_thread_slowmode_delay:Null<Int>;
+
+    public var last_message_id:String;
+
+    public function new(state:ConnectionState, guild:Guild, data:TextChannelUnion) {
+        this._state = state;
+        this.id = data.id;
+        this._type = data.type;
+        this._update(guild, data);
+    }
+
+    public override function _update(guild:Guild, data:TextChannelUnion) {
+        this.guild = guild;
+        this.name = data.name;
+        this.category_id = data.parent_id;
+        this.topic = data.topic;
+        this.position = data.position;
+        this.nsfw = data.nsfw;
+        this.slowmode_delay = data.rate_limit_per_user;
+        this.default_auto_archive_duration = data.default_auto_archive_duration ?? 1440;
+        this.default_thread_slowmode_delay = data.default_thread_rate_limit_per_user ?? 0;
+        this._type = data.type ?? this._type;
+        this.last_message_id = data.last_message_id;
+    }
+
+    public override function _get_channel():Messageable {
+        return this;
+    }
+
+    public override function get_type():ChannelType {
+        if (this._type == 0)
+            return text;
+        return news;
+    }
+
+    public override function get__sorting_bucket():Int {
+        return ChannelType.text;
+    }
+
+    // @property
+    // def _scheduled_event_entity_type(self) -> Optional[EntityType]:
+    //     return None
+
+    /**
+     * Handles permission resolution for the `Member` 
+     * or `Role`.
+     * 
+     * This function takes into consideration the following cases:
+     * 
+     * - Guild owner
+     * - Guild roles
+     * - Channel overrides
+     * - Member overrides
+     * - Implicit permissions
+     * - Member timeout
+     * - User installed app
+     * 
+     * If a `Role` is passed, then it checks the permissions
+     * someone with that role would have, which is essentially:
+     * 
+     * - The default role permissions
+     * - The permissions of the role used as a parameter
+     * - The default role permission overwrites
+     * - The permission overwrites of the role used as a parameter
+     * 
+     * @param obj The object to resolve permissions for. This could be either
+     * a member or a role. If it's a role then member overwrites
+     * are not computed.
+     * @return Permissions The resolved permissions for the member or role.
+     */
+    public override function permissions_for(obj:Dynamic):Permissions {
+        var base = super.permissions_for(obj);
+        this._apply_implicit_permissions(base);
+
+        var denied = Permissions.voice();
+        base.value &= ~denied.value;
+        return base;
+    }
+
+    /**
+     * Returns all members that can see this channel.
+     */
+    public var members(get, never):Array<Member>;
+    function get_members():Array<Member> {
+        return [for (m in this.guild.members) if (this.permissions_for(m).view_channel) m];
+    }
+
+    // public var threads(get, never):Array<Dynamic>;
+    // function get_threads():Array<Dynamic> {
+        // return [for (thread in this.guild._threads.values()) if (thread.parent_id == this.id) thread];
+    // }
+
+    public function is_nsfw():Bool {
+        return this.nsfw;
+    }
+    
+    public function is_news():Bool {
+        return this._type == ChannelType.news;
+    }
+
+    public var last_message(get, never):Message;
+    function get_last_message():Message {
+        if (this.last_message_id != null)
+            return this._state._get_message(this.last_message_id);
+
+        return null;
+    }
+
+    //TBD
+    public function edit() {
+
+    }
+
+    // public override function clone(name:String, reason:String):TextChannel {
+        
+    // }
+
+    /**
+     * Deletes a list of messages. This is similar to `Message.delete` except it bulk deletes multiple messages.
+     * 
+     * You cannot bulk delete more than 100 messages or messages that
+     * are older than 14 days old.
+     * 
+     * You must have `Permissions.manage_messages` to do this.
+     * 
+     * @param messages An array of messages denoting which ones to bulk delete.
+     * @param reason The reason for deleting the messages. Shows up on the audit log.
+     */
+    public function delete_messages(messages:Array<Message>, reason:String) {
+        if (messages.length == 0)
+            return;
+
+        if (messages.length == 1) {
+            var message_id:String = messages[0].id;
+            this._state.http.delete_message(this.id, message_id);
+            return;
+        }
+
+        if (messages.length > 100) {
+            throw "Can only bulk delete up to 100 messages.";
+        }
+
+        var message_ids = [for (m in messages) m.id];
+        this._state.http.delete_messages(this.id, message_ids, reason);
+    }
+
+    // TBD
+    // async def purge(
+    // async def webhooks(
+    // async def create_webhook(
+    // async def follow(
+
+    public function get_partial_message(message_id:String):PartialMessage {
+        return new PartialMessage(this, message_id);
+    }
+
+    // def get_thread(
+    // async def create_thread(
+    // async def archived_threads(
+
+    public static function guild_channel_factory(channel_type:ChannelType):Dynamic {
+        switch (channel_type) {
+            case text:
+                return TextChannel;
+            default:
+                return null;
+        }
     }
 }

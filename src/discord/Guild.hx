@@ -348,10 +348,12 @@ class Guild extends Snowflake {
                 member._presence_update(presence, null);
         }
 
-        // for (channel in data.channels ?? []) {
-        //     var channel:BaseChannel;
-        //     // _add_channel()
-        // }
+        for (channel in data.channels ?? []) {
+            var channel_class = TextChannel.guild_channel_factory(channel.type);
+            if (channel_class != null) { // scuffed
+                this._add_channel(Type.createInstance(channel_class, [this._state, this, channel]));
+            }
+        }
     }
 
     public function add_members(members:Array<Member>) {
@@ -374,6 +376,10 @@ class Guild extends Snowflake {
 
     public function _remove_role(role_id:String):Role {
         return this._roles.pop(role_id);
+    }
+
+    public function _add_channel(channel:GuildChannel) {
+        this._channels.set(channel.id, channel);
     }
 
     public function _resolve_channel(id:String):Dynamic {

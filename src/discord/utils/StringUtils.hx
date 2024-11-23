@@ -3,7 +3,7 @@ package discord.utils;
 import haxe.Int64;
 
 /**
- * Utility extension to handle ID `String`s more quickly.
+ * Utility extension to handle Snowflake `String` IDs quicker.
  */
 class StringUtils {
     public static function i64(string:String):Int64 {
