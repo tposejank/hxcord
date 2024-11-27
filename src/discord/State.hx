@@ -488,6 +488,7 @@ class ConnectionState {
         }
 
         if (StringTools.startsWith(message.content, 'hxcordrole')) {
-        this.dispatch(new discord.utils.events.MessageEvents.Message(message));
+            this.dispatch(new discord.utils.events.MessageEvents.Message(message));
+        }
     }
 }
