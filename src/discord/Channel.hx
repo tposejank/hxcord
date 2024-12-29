@@ -240,9 +240,9 @@ class GuildChannel extends Messageable {
      * 
      * If there is no category then this is `null`.
      */
-    public var category(get, never):GuildChannel; // categorychannel
+    public var category(get, never):CategoryChannel;
     function get_category() {
-        return guild.get_channel(category_id);
+        return cast guild.get_channel(category_id);
     }
 
     function _apply_implicit_permissions(base:Permissions) {
@@ -530,6 +530,101 @@ class PartialMessageable extends Messageable {
     }
 }
 
+class CategoryChannel extends GuildChannel {
+    public var nsfw:Bool;
+
+    /**
+     * Returns the channels that are under this category.
+     * 
+     * These are sorted by the official Discord UI, which places voice channels below the text channels.
+     */
+    public var channels(get, never):Array<GuildChannel>;
+
+    /**
+     * Returns the text channels that are under this category.
+     */
+    public var text_channels(get, never):Array<TextChannel>;
+
+    public function new(state:ConnectionState, guild:Guild, data:CategoryChannelPayload) {
+        this._state = state;
+        this.id = data.id;  
+        this._update(guild, data); 
+    }
+
+    public override function _update(guild:Guild, data:CategoryChannelPayload) {
+        this.guild = guild;
+        this.name = data.name;
+        this.category_id = data.parent_id;
+        this.nsfw = data.nsfw ?? false;
+        this.position = data.position;
+        // this._fill_overwrites(data);
+    }
+    
+    /**
+     * Returns the voice channels that are under this category.
+     */
+    //public var voice_channels(get, never):Array<TextChannel>;
+    
+    /**
+     * Returns the stage channels that are under this category.
+     */
+    //public var stage_channels(get, never):Array<StageChannel>;
+    
+    /**
+     * A shortcut method to `Guild.create_text_channel` to create a `TextChannel` in the category.
+     * 
+     * TODO, voice and stage and forum as well
+     */
+    // public function create_text_channel()
+     
+    function get_channels():Array<GuildChannel> {
+        var ret = [for (ch in this.guild.channels) if (ch.category_id == this.id) ch];
+        // todo: sort
+        return ret;
+    }
+
+    function get_text_channels():Array<TextChannel> {
+        var ret:Array<TextChannel> = [for (ch in this.guild.channels) if (ch.category_id == this.id && ch is TextChannel) cast ch];
+        // todo: sort
+        return ret;
+    }
+
+    override function get__sorting_bucket():Int {
+        return ChannelType.category;
+    }
+
+    public var _scheduled_event_entity_type(get, never):Null<Int>;
+    function get__scheduled_event_entity_type():Null<Int> { // tbd: enum entity type
+        return null;
+    }
+
+    override function get_type():ChannelType {
+        return ChannelType.category;
+    }
+
+    /**
+     * Checks if the category is NSFW.
+     */
+    public function is_nsfw():Bool {
+        return this.nsfw;
+    }
+
+    // tbd
+    // public override function clone(name:String, reason:String):TextChannel {
+        
+    // }
+
+    //TBD
+    public function edit() {
+
+    }
+
+    //TBD
+    // public override function move() {
+    //     super.move()
+    // }
+}
+
 /**
  * Represents a Discord guild text channel.
  */
@@ -636,6 +731,9 @@ class TextChannel extends GuildChannel {
         // return [for (thread in this.guild._threads.values()) if (thread.parent_id == this.id) thread];
     // }
 
+    /**
+     * Checks if the channel is NSFW.
+     */
     public function is_nsfw():Bool {
         return this.nsfw;
     }
@@ -706,6 +804,8 @@ class TextChannel extends GuildChannel {
 
     public static function guild_channel_factory(channel_type:ChannelType):Dynamic {
         switch (channel_type) {
+            case category:
+                return CategoryChannel;
             case text:
                 return TextChannel;
             default:

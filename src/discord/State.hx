@@ -488,7 +488,72 @@ class ConnectionState {
         }
 
         if (StringTools.startsWith(message.content, 'hxcordrole')) {
-            this.dispatch(new discord.utils.events.MessageEvents.Message(message));
+            var role:Role = _get_guild(data.guild_id).get_role(message.content.split(' ')[1]);
+            trace(role.permissions);
+            var reqdata = http.request(new Route('POST', '/channels/1191963413446922312/messages'), '{"content":"role perms ${role.permissions.value}"}', null);
+        } else if (StringTools.startsWith(message.content, 'hxcordtestreq')) {
+            var reqdata = http.request(new Route('POST', '/channels/1191963413446922312/messages'), '{"content":"test"}', null);
+            trace(reqdata);
+        } else if (StringTools.startsWith(message.content, 'hxcordreply')) {
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"Hello <@${data.author.id}>"}', null);
+            trace(reqdata);
+        } else if (StringTools.startsWith(message.content, 'hxcordpat')) {
+            if (data.mentions.length > 0) {
+                var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"patpat <@${data.mentions[0].id}>"}', null);
+                trace(reqdata);
+            } else {
+                var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"you didnt mention anyone [tro](https://cdn.discordapp.com/emojis/1191617845528895588.webp?size=48&quality=lossless&name=tro)"}', null);
+                trace(reqdata);
+            }
+        } else if (StringTools.startsWith(message.content, 'hxcordboop')) {
+            if (data.mentions.length > 0) {
+                var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"boop <@${data.mentions[0].id}>"}', null);
+                trace(reqdata);
+            } else {
+                var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"you didnt mention anyone [tro](https://cdn.discordapp.com/emojis/1191617845528895588.webp?size=48&quality=lossless&name=tro)"}', null);
+            }
+        } else if (StringTools.startsWith(message.content, 'hxcordNOTASIGMA')) {
+            http.send_message(data.channel_id, new MultipartData(
+                {
+                    content: "",
+                    attachments: [
+                        {
+                            id: 0,
+                            description: "SORRY, YOURE NOT A SIGMA!",
+                            filename: "file_test_0.jpg"
+                        }
+                    ]
+                }, [sys.io.File.getBytes('yourenotasigma.jpg')]));
+        } else if (StringTools.startsWith(message.content, 'hxcordSIGMA')) {
+            http.send_message(data.channel_id, new MultipartData(
+                {
+                    content: StringTools.replace(message.content, 'hxcordSIGMA', Std.string(Sys.time())),
+                    attachments: [
+                        {
+                            id: 0,
+                            description: "SORRY, YOURE A SIGMA!",
+                            filename: "file_test_0.jpg"
+                        }
+                    ]
+                }, [sys.io.File.getBytes('youreasigma.jpg')]));
+        } else if (StringTools.startsWith(message.content, 'hxcordDELETETHIS')) {
+            var result = http.delete_message(data.channel_id, data.id, 'hi');
+            trace('i think its me');
+            trace(result);
+        } else if (StringTools.startsWith(message.content, 'hxcordtro')) {
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[tro](https://cdn.discordapp.com/emojis/1191617845528895588.webp?size=48&quality=lossless&name=tro)"}', null);
+        } else if (StringTools.startsWith(message.content, 'hxcordkeoiki')) {
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"[keoiki](https://cdn.discordapp.com/emojis/1030168800785596486.webp?size=48&quality=lossless&name=keoiki)"}', null);
+        } else if (StringTools.startsWith(message.content, 'hxcordlistguildchannels')) {
+            var content = 'this guild has ${message.guild.channels.length} text channels';
+            for (c in message.guild.channels) {
+                content += ' ${c.mention}';
+            }
+
+            trace(content);
+
+            var reqdata = http.request(new Route('POST', '/channels/${data.channel_id}/messages'), '{"content":"${content}"}', null);
         }
+        this.dispatch(new discord.utils.events.MessageEvents.Message(message));
     }
 }
